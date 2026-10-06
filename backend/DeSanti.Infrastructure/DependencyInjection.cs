@@ -1,4 +1,6 @@
+using DeSanti.Application.Interfaces.Repositories;
 using DeSanti.Infrastructure.Data;
+using DeSanti.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -19,6 +21,8 @@ public static class DependencyInjection
             }
         });
 
+        services.AddScoped<IClienteRepository, ClienteRepository>();
+        
         return services;
     }
 }

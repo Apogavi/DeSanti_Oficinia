@@ -1,6 +1,6 @@
-namespace DeSanti.Domain;
+namespace DeSanti.Application.DTOs.Cliente;
 
-public class Cliente
+public class ResponseClienteDto
 {
     public long Id { get; set; }
     public string Nome { get; set; } = string.Empty;
