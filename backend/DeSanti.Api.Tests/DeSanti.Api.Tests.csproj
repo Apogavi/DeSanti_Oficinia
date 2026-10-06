@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DeSanti.Api\DeSanti.API.csproj" />
+    <ProjectReference Include="../DeSanti.Application/DeSanti.Application.csproj" />
   </ItemGroup>
 
 </Project>

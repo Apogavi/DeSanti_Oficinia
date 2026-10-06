@@ -1,4 +1,4 @@
-namespace DeSanti.API.OrdensServico;
+namespace DeSanti.Application.DTOs.OrdensServico;
 
 public sealed record PecaRequest(
     string Nome,

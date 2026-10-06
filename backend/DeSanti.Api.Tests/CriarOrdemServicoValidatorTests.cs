@@ -1,4 +1,5 @@
-﻿using DeSanti.API.OrdensServico;
+﻿using DeSanti.Application.DTOs.OrdensServico;
+using DeSanti.Application.Validators.OrdensServico;
 
 namespace DeSanti.Api.Tests;
 

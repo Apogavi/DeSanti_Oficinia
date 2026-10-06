@@ -8,7 +8,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11" />
-    <PackageReference Include="MySqlConnector" Version="2.6.2" />
+    <ProjectReference Include="../DeSanti.Application/DeSanti.Application.csproj" />
+    <ProjectReference Include="../DeSanti.Infrastructure/DeSanti.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

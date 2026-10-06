@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="DeSanti.Api/DeSanti.API.csproj" />
+  <Project Path="DeSanti.Application/DeSanti.Application.csproj" />
+  <Project Path="DeSanti.Domain/DeSanti.Domain.csproj" />
+  <Project Path="DeSanti.Infrastructure/DeSanti.Infrastructure.csproj" />
+  <Project Path="DeSanti.Api.Tests/DeSanti.Api.Tests.csproj" />
+</Solution>

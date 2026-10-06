@@ -1,6 +1,6 @@
 @DeSanti.API_HostAddress = http://localhost:5085
 
-GET {{DeSanti.API_HostAddress}}/weatherforecast/
+GET {{DeSanti.API_HostAddress}}/openapi/v1.json
 Accept: application/json
 
 ###

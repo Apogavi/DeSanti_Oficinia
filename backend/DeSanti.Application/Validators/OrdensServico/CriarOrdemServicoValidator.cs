@@ -1,6 +1,7 @@
 using System.Text.RegularExpressions;
+using DeSanti.Application.DTOs.OrdensServico;
 
-namespace DeSanti.API.OrdensServico;
+namespace DeSanti.Application.Validators.OrdensServico;
 
 public static class CriarOrdemServicoValidator
 {
