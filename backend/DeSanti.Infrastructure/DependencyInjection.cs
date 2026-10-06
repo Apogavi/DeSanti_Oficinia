@@ -1,5 +1,5 @@
-using DeSanti.Application.Interfaces;
 using DeSanti.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -7,12 +7,17 @@ namespace DeSanti.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(
-        this IServiceCollection services,
-        IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IDbConnectionFactory>(
-            _ => new MySqlConnectionFactory(configuration.GetConnectionString("DefaultConnection")));
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        services.AddDbContext<AppDbContext>(options =>
+        {
+            if (!string.IsNullOrEmpty(connectionString))
+            {
+                options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+            }
+        });
 
         return services;
     }
