@@ -1,0 +1,31 @@
+name: desanti-dev
+
+services:
+  mysql:
+    image: mysql:8.4.13
+    restart: "no"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:?Execute python3 scripts/configure_dev.py}
+      MYSQL_USER: ${MYSQL_USER:?Execute python3 scripts/configure_dev.py}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Execute python3 scripts/configure_dev.py}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Execute python3 scripts/configure_dev.py}
+    # Desenvolvimento local: o banco não é publicado para a LAN.
+    ports:
+      - "127.0.0.1:${MYSQL_PORT:-3306}:3306"
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-storage-engine=InnoDB
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Executado pela imagem somente ao inicializar um volume vazio.
+      - ./backend/docs/schema_criacao_referencia.sql:/docker-entrypoint-initdb.d/001_schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+volumes:
+  mysql_data:
