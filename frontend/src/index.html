@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <title>DeSanti Automotiva</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="alternate icon" type="image/x-icon" href="favicon.ico" />
+    <script src="config.js"></script>
+    <script>
+      (function () {
+        var saved = localStorage.getItem('desanti-theme');
+        var dark = saved
+          ? saved === 'dark'
+          : matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+        if (localStorage.getItem('desanti-perf-mode') === 'lite') {
+          document.documentElement.dataset.perf = 'lite';
+        }
+      })();
+    </script>
+  </head>
+  <body class="liquid-glass-backdrop">
+    <app-root></app-root>
+  </body>
+</html>

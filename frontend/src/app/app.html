@@ -1,0 +1,2151 @@
+@if (verificandoSessao()) {
+  <main class="auth-screen">
+    <div class="liquid-glass auth-card auth-card--loading" appLiquidGlass>
+      <strong>Verificando sessão…</strong>
+      <span class="text-muted">Conectando à DeSanti Automotiva.</span>
+    </div>
+  </main>
+} @else if (!usuarioAtual()) {
+  <!-- TELA DE LOGIN (Apple HIG + Liquid Glass, inspirada na estrutura do IvoRosa ERP) -->
+  <main class="auth-screen">
+    <section class="liquid-glass auth-split-card" appLiquidGlass aria-labelledby="login-titulo">
+      <div class="auth-brand-pane">
+        <div>
+          <picture>
+            <source srcset="logo-desanti.webp" type="image/webp" />
+            <img
+              src="logo-desanti.png"
+              alt="DeSanti Automotiva"
+              class="auth-brand-logo"
+              width="480"
+              height="202"
+            />
+          </picture>
+          <p class="auth-kicker">Oficina Mecânica &amp; Gestão</p>
+          <h1 class="auth-brand-title">DeSanti Automotiva</h1>
+          <p class="auth-brand-desc">
+            Ordens de serviço, orçamentos, histórico de veículos, controle de peças e financeiro operacional.
+          </p>
+        </div>
+
+        <div class="auth-brand-footer">
+          <span>Acesso autenticado com perfis de oficina</span>
+          <div class="auth-theme-toggles">
+            <button type="button" class="btn-ghost auth-mini-btn" (click)="alternarTema()">
+              {{ temaEscuro() ? 'Modo claro' : 'Modo escuro' }}
+            </button>
+            <button type="button" class="btn-ghost auth-mini-btn" (click)="alternarModoLeve()">
+              {{ modoLeve() ? 'Modo leve: Ativo' : 'Modo leve' }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-form-pane">
+        <div class="auth-form-header">
+          <h2 id="login-titulo" class="card-title" style="font-size: 1.5rem; margin-bottom: 0.25rem">
+            Entrar no sistema
+          </h2>
+          <p class="text-muted" style="margin: 0">
+            Informe seu usuário e senha cadastrados na oficina.
+          </p>
+        </div>
+
+        @if (sessaoExpiradaMsg(); as expMsg) {
+          <div class="alert-box alert-box--warn" role="status">
+            <span>{{ expMsg }}</span>
+          </div>
+        }
+
+        @if (loginErro(); as err) {
+          <div class="alert-box alert-box--danger" role="alert">
+            <span>{{ err }}</span>
+          </div>
+        }
+
+        <form (ngSubmit)="realizarLogin()" novalidate>
+          <div class="field-group">
+            <label for="login-usuario">Usuário</label>
+            <input
+              id="login-usuario"
+              type="text"
+              name="loginUsuario"
+              autocomplete="username"
+              autofocus
+              placeholder="Ex.: desanti, diosec"
+              [ngModel]="loginUsuario()"
+              (ngModelChange)="loginUsuario.set($event)"
+              [disabled]="loginEnviando()"
+            />
+          </div>
+
+          <div class="field-group">
+            <label for="login-senha">Senha</label>
+            <div class="auth-password-row">
+              <input
+                id="login-senha"
+                [type]="loginMostrarSenha() ? 'text' : 'password'"
+                name="loginSenha"
+                autocomplete="current-password"
+                placeholder="Digite sua senha"
+                [ngModel]="loginSenha()"
+                (ngModelChange)="loginSenha.set($event)"
+                [disabled]="loginEnviando()"
+              />
+              <button
+                type="button"
+                class="btn-secondary auth-toggle-pass"
+                (click)="loginMostrarSenha.set(!loginMostrarSenha())"
+                [attr.aria-label]="loginMostrarSenha() ? 'Ocultar senha' : 'Mostrar senha'"
+              >
+                {{ loginMostrarSenha() ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn-primary auth-submit-btn"
+            [disabled]="loginEnviando()"
+          >
+            {{ loginEnviando() ? 'Entrando...' : 'Acessar DeSanti ERP' }}
+          </button>
+        </form>
+      </div>
+    </section>
+  </main>
+} @else {
+<!-- Camada Funcional (Liquid Glass): Menu Suspenso no Topo + Identidade DeSanti -->
+<header class="topbar-shell">
+  <nav
+    class="liquid-glass topbar-pill"
+    appLiquidGlass
+    aria-label="Menu principal de navegação"
+  >
+    <button
+      type="button"
+      class="icon-trigger"
+      (click)="alternarMenu()"
+      [attr.aria-expanded]="menuExpandido()"
+      [title]="menuExpandido() ? 'Recolher menu' : 'Abrir menu'"
+    >
+      @if (!menuExpandido()) {
+        <!-- Ícone Sanduíche (3 traços) estilo Apple -->
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+          <line x1="4" y1="7" x2="20" y2="7"></line>
+          <line x1="4" y1="12" x2="20" y2="12"></line>
+          <line x1="4" y1="17" x2="20" y2="17"></line>
+        </svg>
+      } @else {
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true">
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+        </svg>
+      }
+    </button>
+
+    @if (menuExpandido()) {
+      <div class="topbar-links">
+        <button
+          type="button"
+          class="nav-option"
+          [class.nav-option--active]="abaAtiva() === 'ordens'"
+          (click)="selecionarAba('ordens')"
+        >
+          Ordens de serviço
+        </button>
+        <button
+          type="button"
+          class="nav-option"
+          [class.nav-option--active]="abaAtiva() === 'clientes'"
+          (click)="selecionarAba('clientes')"
+        >
+          Clientes
+        </button>
+        @if (ehAdmin()) {
+          <button
+            type="button"
+            class="nav-option"
+            [class.nav-option--active]="abaAtiva() === 'financeiro'"
+            (click)="selecionarAba('financeiro')"
+          >
+            Financeiro
+          </button>
+        }
+        <button
+          type="button"
+          class="nav-option"
+          [class.nav-option--active]="abaAtiva() === 'conta'"
+          (click)="selecionarAba('conta')"
+        >
+          {{ ehAdmin() ? 'Conta & Usuários' : 'Minha conta' }}
+        </button>
+        <button
+          type="button"
+          class="nav-option nav-option--theme"
+          (click)="alternarTema()"
+          [title]="temaEscuro() ? 'Mudar para modo claro' : 'Mudar para modo escuro'"
+        >
+          {{ temaEscuro() ? 'Modo claro' : 'Modo escuro' }}
+        </button>
+        <button
+          type="button"
+          class="nav-option"
+          [class.nav-option--active]="modoLeve()"
+          (click)="alternarModoLeve()"
+          title="Desativa blur e animações para computadores modestos"
+        >
+          {{ modoLeve() ? 'Modo leve: Ativo' : 'Modo leve' }}
+        </button>
+        <button
+          type="button"
+          class="nav-option nav-option--logout"
+          (click)="sair()"
+          title="Encerrar sessão"
+        >
+          Sair ({{ usuarioAtual()?.userName }})
+        </button>
+      </div>
+    }
+  </nav>
+
+  <button
+    type="button"
+    class="brand-badge"
+    (click)="selecionarAba('ordens')"
+    aria-label="DeSanti Automotiva — Voltar para ordens de serviço"
+    title="DeSanti Automotiva"
+  >
+    <picture>
+      <source srcset="logo-desanti.webp" type="image/webp" />
+      <img
+        src="logo-desanti.png"
+        alt="DeSanti Automotiva"
+        class="brand-logo"
+        width="480"
+        height="202"
+        decoding="async"
+      />
+    </picture>
+  </button>
+</header>
+
+<!-- Camada de Conteúdo -->
+<main class="page-container">
+  <!-- ABA 1: ORDENS DE SERVIÇO (TELA INICIAL OU FORMULÁRIO DE NOVA OS) -->
+  @if (abaAtiva() === 'ordens') {
+    @if (!abrindoNovaOs()) {
+      <section class="hero-header">
+        <div>
+          <h1 class="page-title">Ordens de serviço</h1>
+          <p class="page-subtitle">
+            Consulte, finalize e acompanhe as ordens de serviço da oficina.
+          </p>
+        </div>
+        <button type="button" class="btn-primary" (click)="iniciarNovaOrdem()">
+          + Nova ordem de serviço
+        </button>
+      </section>
+
+      <section aria-label="Consulta de ordens" class="os-consulta">
+        @if (retornos().length > 0) {
+          <div class="card radar-card">
+            <div class="card-header-row">
+              <div>
+                <h2 class="card-title radar-titulo">
+                  Radar de retornos ({{ retornos().length }})
+                </h2>
+                <p class="text-muted radar-subtitulo">
+                  Veículos com revisão/retorno vencido ou previsto para os próximos 14 dias.
+                </p>
+              </div>
+              <button
+                type="button"
+                class="btn-ghost"
+                (click)="radarExpandido.set(!radarExpandido())"
+              >
+                {{ radarExpandido() ? 'Recolher' : 'Expandir' }}
+              </button>
+            </div>
+
+            @if (radarExpandido()) {
+              <div class="radar-lista">
+                @for (ret of retornos(); track ret.id) {
+                  <div class="radar-item">
+                    <div class="radar-info">
+                      <div class="radar-topo">
+                        <strong class="tabular-nums">#{{ ret.id }}</strong>
+                        <span class="placa-badge tabular-nums">{{ placaFormatada(ret.placa) }}</span>
+                        <span
+                          class="liquid-glass-chip status-pill"
+                          [class.status-pill--vencido]="retornoVencido(ret.dataPrevistaRetornoUtc)"
+                          [class.status-pill--aberta]="!retornoVencido(ret.dataPrevistaRetornoUtc)"
+                        >
+                          <span class="status-dot" aria-hidden="true"></span>
+                          {{ retornoVencido(ret.dataPrevistaRetornoUtc) ? 'Vencido' : 'Próximo' }}
+                          · {{ ret.dataPrevistaRetornoUtc | date:'dd/MM/yyyy' }}
+                        </span>
+                      </div>
+                      <div class="radar-cliente">
+                        <strong>{{ ret.nomeCliente }}</strong> · {{ ret.marca }} {{ ret.modelo }}
+                      </div>
+                    </div>
+                    <div class="radar-acoes">
+                      <button
+                        type="button"
+                        class="btn-secondary"
+                        (click)="abrirDetalhe(ret.id, detalheDialog)"
+                      >
+                        Ver OS
+                      </button>
+                      @if (linkWhatsappRetorno(ret); as waUrl) {
+                        <a
+                          class="btn-primary radar-wa"
+                          [href]="waUrl"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          WhatsApp
+                        </a>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <div class="card os-filtros-card">
+          <form class="os-filtros" (ngSubmit)="buscarOrdens()">
+            <div class="field-group">
+              <label for="os-lista-busca">Cliente, documento ou placa</label>
+              <input
+                id="os-lista-busca"
+                type="text"
+                name="busca"
+                maxlength="200"
+                placeholder="Nome, CPF/CNPJ ou placa..."
+                [ngModel]="buscaOsLista()"
+                (ngModelChange)="buscaOsLista.set($event)"
+              />
+            </div>
+            <div class="field-group">
+              <label for="os-lista-status">Status</label>
+              <select
+                id="os-lista-status"
+                name="status"
+                [ngModel]="statusOsLista()"
+                (ngModelChange)="statusOsLista.set($event)"
+              >
+                <option value="">Todas</option>
+                <option value="orcamento">Orçamentos</option>
+                <option value="aberta">Em aberto</option>
+                <option value="concluida">Concluídas</option>
+              </select>
+            </div>
+            <div class="os-filtros-acoes">
+              <button class="btn-primary" type="submit" [disabled]="consultaOcupada()">
+                Buscar
+              </button>
+              <button
+                class="btn-secondary"
+                type="button"
+                [disabled]="consultaOcupada()"
+                (click)="limparFiltrosOrdens()"
+              >
+                Limpar
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card os-lista-card">
+          <div class="card-header-row os-lista-header">
+            <div>
+              <h2 class="card-title os-lista-titulo">Ordens registradas</h2>
+              <p class="text-muted os-lista-contagem tabular-nums">
+                Página {{ paginaOs() }} · {{ ordens().length }} {{ ordens().length === 1 ? 'ordem exibida' : 'ordens exibidas' }}
+              </p>
+            </div>
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="consultaOcupada()"
+              (click)="carregarOrdens()"
+            >
+              {{ consultaOcupada() ? 'Atualizando...' : 'Atualizar lista' }}
+            </button>
+          </div>
+
+          @if (consultaOcupada()) {
+            <p class="os-estado-msg" role="status">Carregando ordens de serviço…</p>
+          }
+
+          @if (consultaErro()) {
+            <div class="alert-box alert-box--danger" role="alert">
+              <div class="alert-content">
+                <strong>Não foi possível carregar as ordens</strong>
+                <span>{{ consultaErro() }}</span>
+              </div>
+              <button type="button" class="btn-secondary" (click)="carregarOrdens()">
+                Tentar novamente
+              </button>
+            </div>
+          }
+
+          <div class="os-lista">
+            @for (os of ordens(); track os.id) {
+              <button
+                type="button"
+                class="os-linha"
+                (click)="abrirDetalhe(os.id, detalheDialog)"
+              >
+                <div class="os-linha-id">
+                  <strong class="tabular-nums">#{{ os.id }}</strong>
+                  <span class="placa-badge tabular-nums">{{ os.placa }}</span>
+                </div>
+
+                <div class="os-linha-cliente">
+                  <span class="os-linha-nome">{{ os.nomeCliente }}</span>
+                  <span class="text-muted">{{ os.marca }} {{ os.modelo }}</span>
+                </div>
+
+                <div class="os-linha-status">
+                  <span
+                    class="liquid-glass-chip status-pill"
+                    [class.status-pill--concluida]="statusDaOrdem(os) === 'concluida'"
+                    [class.status-pill--aberta]="statusDaOrdem(os) === 'aberta'"
+                    [class.status-pill--orcamento]="statusDaOrdem(os) === 'orcamento'"
+                  >
+                    <span class="status-dot" aria-hidden="true"></span>
+                    {{ rotuloStatusOrdem(os) }}
+                  </span>
+                  <span class="text-muted tabular-nums">
+                    Abertura: {{ os.dataCriacaoUtc | date:'dd/MM/yyyy' }}
+                    @if (os.dataPrevistaRetornoUtc) {
+                      · Retorno: {{ os.dataPrevistaRetornoUtc | date:'dd/MM/yyyy' }}
+                    }
+                  </span>
+                </div>
+
+                <div class="os-linha-total">
+                  <strong class="tabular-nums os-valor">{{ reais(os.totalCentavos) }}</strong>
+                  <span class="os-acao-dica">Ver detalhes</span>
+                </div>
+              </button>
+            } @empty {
+              @if (!consultaOcupada() && !consultaErro()) {
+                <div class="empty-box os-vazia">
+                  <strong>Nenhuma ordem encontrada nesta página.</strong>
+                  <span>Ajuste os filtros de busca ou abra uma nova ordem de serviço para começar.</span>
+                </div>
+              }
+            }
+          </div>
+
+          <div class="os-paginacao">
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="paginaOs() === 1 || consultaOcupada()"
+              (click)="carregarOrdens(paginaOs() - 1)"
+            >
+              Anterior
+            </button>
+            <span class="text-muted tabular-nums">Página {{ paginaOs() }}</span>
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="!temProximaPaginaOs() || consultaOcupada()"
+              (click)="carregarOrdens(paginaOs() + 1)"
+            >
+              Próxima
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <dialog
+        #detalheDialog
+        class="liquid-glass liquid-glass--modal os-detalhe"
+        aria-labelledby="titulo-detalhe"
+        (close)="aoFecharDetalhe()"
+        (cancel)="aoCancelarDetalhe($event)"
+      >
+        <div class="detalhe-header">
+          <div class="detalhe-titulo-grupo">
+            @if (detalhe(); as os) {
+              <span
+                class="liquid-glass-chip status-pill"
+                [class.status-pill--concluida]="statusDaOrdem(os) === 'concluida'"
+                [class.status-pill--aberta]="statusDaOrdem(os) === 'aberta'"
+                [class.status-pill--orcamento]="statusDaOrdem(os) === 'orcamento'"
+              >
+                <span class="status-dot" aria-hidden="true"></span>
+                {{ rotuloStatusOrdem(os) }}
+              </span>
+            }
+            <h2 id="titulo-detalhe" class="detalhe-titulo">
+              @if (detalhe(); as os) {
+                {{ statusDaOrdem(os) === 'orcamento' ? 'Orçamento' : 'Ordem' }} #{{ os.id }} · {{ placaFormatada(os.placa) }}
+              } @else {
+                Detalhes da ordem de serviço
+              }
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            class="btn-ghost detalhe-fechar"
+            autofocus
+            [disabled]="finalizandoOs()"
+            (click)="detalheDialog.close()"
+          >
+            Fechar
+          </button>
+        </div>
+
+        <div class="detalhe-corpo">
+          @if (detalheErro()) {
+            <div class="alert-box alert-box--danger" role="alert">
+              <span>{{ detalheErro() }}</span>
+            </div>
+          }
+
+          @if (detalhe(); as os) {
+            <div class="detalhe-grid">
+              <div class="detalhe-secao">
+                <h3 class="detalhe-subtitulo">Cliente</h3>
+                <p class="detalhe-dado-principal">{{ os.nomeCliente }}</p>
+                <p class="text-muted tabular-nums">
+                  {{ docFormatado(os.documentoCliente) }} · {{ telFormatado(os.telefoneCliente) }}
+                </p>
+              </div>
+
+              <div class="detalhe-secao">
+                <h3 class="detalhe-subtitulo">Veículo</h3>
+                <p class="detalhe-dado-principal">{{ os.marca }} {{ os.modelo }}</p>
+                <p class="text-muted tabular-nums">
+                  Cor {{ os.cor }} · {{ os.ano ?? 'Ano não informado' }}
+                </p>
+              </div>
+            </div>
+
+            <div class="detalhe-divisor" aria-hidden="true"></div>
+
+            <div class="detalhe-secao">
+              <h3 class="detalhe-subtitulo">Serviço executado</h3>
+              <p class="os-descricao">{{ os.descricaoServico }}</p>
+            </div>
+
+            <div class="detalhe-divisor" aria-hidden="true"></div>
+
+            <div class="detalhe-secao">
+              <h3 class="detalhe-subtitulo">Peças e valores</h3>
+              @for (peca of os.pecas; track $index) {
+                <div class="detalhe-peca">
+                  <div>
+                    <div class="peca-title">{{ peca.nome }}</div>
+                    <div class="peca-meta tabular-nums">
+                      @if (peca.valorTotalCentavos != null) {
+                        {{ peca.quantidade }} un. · Custo unitário:
+                        {{ peca.custoUnitarioCentavos === null ? 'Desconhecido' : reais(peca.custoUnitarioCentavos) }}
+                      } @else {
+                        {{ peca.quantidade }} un. × Cobrado {{ reais(peca.valorUnitarioCentavos) }}
+                        · Custo unitário:
+                        {{ peca.custoUnitarioCentavos === null ? 'Desconhecido' : reais(peca.custoUnitarioCentavos) }}
+                      }
+                    </div>
+                  </div>
+                  <strong class="tabular-nums">
+                    {{ reais(peca.valorTotalCentavos ?? peca.quantidade * peca.valorUnitarioCentavos) }}
+                  </strong>
+                </div>
+              } @empty {
+                <p class="text-muted">Sem peças informadas.</p>
+              }
+
+              <div class="detalhe-totais">
+                <div class="total-line">
+                  <span>Mão de obra</span>
+                  <strong class="tabular-nums">{{ reais(os.maoDeObraCentavos) }}</strong>
+                </div>
+                <div class="total-line total-line--grand">
+                  <span>Total da OS</span>
+                  <strong class="tabular-nums">{{ reais(os.totalCentavos) }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="detalhe-divisor" aria-hidden="true"></div>
+
+            <div class="detalhe-secao">
+              <h3 class="detalhe-subtitulo">Datas e retorno</h3>
+              <p class="detalhe-linha-info tabular-nums">
+                <strong>Abertura:</strong> {{ os.dataCriacaoUtc | date:'dd/MM/yyyy' }}
+              </p>
+              @if (os.dataConclusaoUtc) {
+                <p class="detalhe-linha-info tabular-nums">
+                  <strong>Conclusão:</strong> {{ os.dataConclusaoUtc | date:'dd/MM/yyyy' }}
+                </p>
+              }
+              @if (os.dataPrevistaRetornoUtc) {
+                <p class="detalhe-linha-info tabular-nums">
+                  <strong>Previsão de retorno:</strong> {{ os.dataPrevistaRetornoUtc | date:'dd/MM/yyyy' }}
+                </p>
+              }
+              @if (os.necessitaRetorno) {
+                <p class="text-muted tabular-nums">
+                  Prazo de retorno: {{ os.prazoRetornoDias }} dias após a conclusão.
+                </p>
+              } @else {
+                <p class="text-muted">Sem retorno programado.</p>
+              }
+            </div>
+
+            <footer class="detalhe-footer">
+              @if (finalizacaoSucesso(); as fin) {
+                <div class="alert-box alert-box--ok" role="status">
+                  <div class="alert-content">
+                    <strong>Ordem #{{ fin.id }} finalizada com sucesso.</strong>
+                    <span class="tabular-nums">
+                      Conclusão em {{ fin.dataConclusaoUtc | date:'dd/MM/yyyy' }}
+                      @if (fin.dataPrevistaRetornoUtc) {
+                        · Previsão de retorno: {{ fin.dataPrevistaRetornoUtc | date:'dd/MM/yyyy' }}
+                      }
+                    </span>
+                  </div>
+                </div>
+              }
+
+              @if (aprovacaoSucesso()) {
+                <div class="alert-box alert-box--ok" role="status">
+                  <strong>Orçamento aprovado! A ordem de serviço agora está em aberto.</strong>
+                </div>
+              }
+
+              @if (finalizacaoErro(); as erro) {
+                <div class="alert-box alert-box--danger" role="alert">
+                  <span>{{ erro }}</span>
+                </div>
+              }
+
+              <div class="detalhe-footer-acoes detalhe-footer-acoes--split">
+                <div class="detalhe-acoes-cliente">
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    [disabled]="finalizandoOs() || aprovandoOs()"
+                    (click)="imprimirOsCliente()"
+                  >
+                    Imprimir / PDF
+                  </button>
+                  @if (linkWhatsappDetalhe(); as waOsUrl) {
+                    <a
+                      class="btn-secondary detalhe-wa-link"
+                      [href]="waOsUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Enviar no WhatsApp
+                    </a>
+                  }
+                </div>
+
+                @if (statusDaOrdem(os) === 'orcamento') {
+                  <button
+                    type="button"
+                    class="btn-primary"
+                    [disabled]="aprovandoOs()"
+                    (click)="aprovarOrcamentoOs()"
+                  >
+                    {{ aprovandoOs() ? 'Aprovando...' : 'Aprovar orçamento' }}
+                  </button>
+                } @else if (statusDaOrdem(os) === 'aberta' && !confirmandoFinalizacao()) {
+                  <button
+                    type="button"
+                    class="btn-primary"
+                    [disabled]="finalizandoOs()"
+                    (click)="solicitarFinalizacao()"
+                  >
+                    Finalizar ordem de serviço
+                  </button>
+                }
+              </div>
+
+              @if (!os.dataConclusaoUtc && confirmandoFinalizacao()) {
+                <div class="detalhe-confirmacao">
+                  <div class="detalhe-confirmacao-texto">
+                    <strong>Confirmar finalização da OS #{{ os.id }}?</strong>
+                    <span class="text-muted">
+                      @if (os.necessitaRetorno && os.prazoRetornoDias) {
+                        A conclusão será registrada hoje e a previsão de retorno será calculada para {{ os.prazoRetornoDias }} dias.
+                      } @else {
+                        A data de conclusão será registrada com o momento atual.
+                      }
+                    </span>
+                  </div>
+                  <div class="detalhe-footer-acoes">
+                    <button
+                      type="button"
+                      class="btn-secondary"
+                      autofocus
+                      [disabled]="finalizandoOs()"
+                      (click)="cancelarFinalizacao()"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      type="button"
+                      class="btn-primary"
+                      [disabled]="finalizandoOs()"
+                      (click)="confirmarFinalizacaoOs()"
+                    >
+                      {{ finalizandoOs() ? 'Finalizando...' : 'Confirmar finalização' }}
+                    </button>
+                  </div>
+                </div>
+              }
+            </footer>
+          } @else {
+            @if (!detalheErro()) {
+              <p class="os-estado-msg" role="status">Carregando detalhes…</p>
+            }
+          }
+        </div>
+      </dialog>
+      <hr class="section-divider" />
+
+      @if (ultimaOsCriada(); as criada) {
+        <div class="alert-box alert-box--ok">
+          <div>
+            <strong>Ordem de serviço #{{ criada.id }} salva com sucesso.</strong>
+            <div class="tabular-nums">
+              Total confirmado: {{ reais(criada.totalCentavos) }}
+            </div>
+          </div>
+        </div>
+      }
+    } @else {
+      <!-- FORMULÁRIO DE NOVA ORDEM DE SERVIÇO -->
+      <section class="hero-header">
+        <div>
+          <button type="button" class="btn-ghost" (click)="voltarParaInicio()">
+            ← Voltar para ordens de serviço
+          </button>
+          <h1 class="page-title" style="margin-top: 0.5rem">
+            Nova ordem de serviço
+          </h1>
+          <p class="page-subtitle">
+            Preencha os dados do cliente, veículo, peças e mão de obra.
+          </p>
+        </div>
+      </section>
+
+      @if (rascunhoRecuperado()) {
+        <div class="alert-box alert-box--warn" role="status">
+          <div class="alert-content">
+            <strong>Rascunho anterior recuperado automaticamente.</strong>
+            <span>Você pode continuar de onde parou ou limpar para iniciar uma OS em branco.</span>
+          </div>
+          <button
+            type="button"
+            class="btn-secondary"
+            [disabled]="osEnviando()"
+            (click)="descartarRascunhoNovaOs()"
+          >
+            Limpar rascunho
+          </button>
+        </div>
+      }
+
+      @if (osMensagemErro(); as msg) {
+        <div class="alert-box alert-box--danger">
+          <div class="alert-content">
+            <strong>{{ msg }}</strong>
+            @if (osResultadoIncerto()) {
+              <span>
+                O envio teve resultado incerto. Você pode tentar novamente com segurança usando a mesma chave de proteção contra duplicidade.
+              </span>
+            }
+          </div>
+          @if (osResultadoIncerto()) {
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="osEnviando()"
+              (click)="tentarReenviarComIdempotencia()"
+            >
+              Tentar novamente com segurança
+            </button>
+          }
+        </div>
+      }
+
+      <form class="os-grid" (ngSubmit)="salvarOrdemServico()" novalidate>
+        <!-- 1. SEÇÃO CLIENTE -->
+        <section class="card">
+          <h2 class="card-title">Cliente</h2>
+
+          <div class="field-group">
+            <label for="os-busca-cliente">Buscar por nome ou CPF/CNPJ</label>
+            <input
+              id="os-busca-cliente"
+              type="text"
+              placeholder="Digite o nome, CPF ou CNPJ para localizar"
+              [ngModel]="osBuscaCliente()"
+              (ngModelChange)="aoBuscarClienteNaOs($event)"
+              name="osBuscaCliente"
+              (keydown.enter)="buscarClienteOs($event)"
+              autocomplete="off"
+              [disabled]="osBloqueada()"
+            />
+          </div>
+
+          @if (buscaOsSemResultado()) {
+            <div class="alert-box alert-box--warn">
+              <div class="alert-content">
+                <strong>
+                  Cliente não encontrado para "{{ osBuscaCliente().trim() }}".
+                </strong>
+                <span>
+                  Cadastre o cliente antes de prosseguir com a abertura da ordem de serviço.
+                </span>
+              </div>
+              <button
+                type="button"
+                class="btn-secondary"
+                (click)="abrirModalClienteDaOs(osBuscaCliente())"
+              >
+                + Cadastrar cliente antes de prosseguir
+              </button>
+            </div>
+          }
+
+          <div class="cliente-busca-acoes">
+            <button type="button" class="btn-secondary" (click)="buscarClienteOs()"
+              [disabled]="osBloqueada() || carregandoClientes() || !!erroListaClientes() || !osBuscaCliente().trim()">Buscar cliente</button>
+            @if (carregandoClientes()) { <span role="status">Carregando clientes…</span> }
+            @if (erroCampo(osErros(), 'clienteId'); as erro) { <span class="field-error" role="alert">{{ erro }}</span> }
+          </div>
+          @if (resultadosCliente().length > 1) {
+            <section class="cliente-resultados" aria-label="Resultados da busca de clientes">
+              <p role="status">{{ resultadosCliente().length }} clientes encontrados. Selecione o cliente.</p>
+              @for (c of resultadosCliente(); track c.id) {
+                <button type="button" class="cliente-resultado" [disabled]="osBloqueada()" (click)="selecionarClienteBusca(c)">
+                  <strong>{{ c.nome }}</strong><span>{{ docFormatado(c.documento) }}</span>
+                </button>
+              }
+            </section>
+          }
+
+          @if (clienteSelecionadoOs(); as sel) {
+            <div class="summary-strip tabular-nums">
+              <div><strong>Nome:</strong> {{ sel.nome }}</div>
+              <div><strong>Documento:</strong> {{ docFormatado(sel.documento) }}</div>
+              <div><strong>Telefone:</strong> {{ telFormatado(sel.telefone) }}</div>
+            </div>
+          }
+        </section>
+
+        <!-- 2. SEÇÃO VEÍCULO -->
+        <section class="card">
+          <h2 class="card-title">Veículo</h2>
+          <div class="form-row-2">
+            <div class="field-group">
+              <label for="os-placa">Placa *</label>
+              <input
+                id="os-placa"
+                type="text"
+                name="osPlaca"
+                placeholder="AAA-0A00"
+                maxlength="8"
+                [ngModel]="osPlaca()"
+                (ngModelChange)="aoDigitarPlaca($event)"
+                [disabled]="osBloqueada()"
+              />
+              @if (erroCampo(osErros(), 'placa'); as erro) {
+                <span class="field-error">{{ erro }}</span>
+              }
+            </div>
+            <div class="field-group">
+              <label for="os-marca">Marca *</label>
+              <input
+                id="os-marca"
+                type="text"
+                name="osMarca"
+                maxlength="100"
+                [ngModel]="osMarca()"
+                (ngModelChange)="osMarca.set($event)"
+                [disabled]="osBloqueada()"
+              />
+              @if (erroCampo(osErros(), 'marca'); as erro) {
+                <span class="field-error">{{ erro }}</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="field-group">
+              <label for="os-modelo">Modelo *</label>
+              <input
+                id="os-modelo"
+                type="text"
+                name="osModelo"
+                maxlength="100"
+                [ngModel]="osModelo()"
+                (ngModelChange)="osModelo.set($event)"
+                [disabled]="osBloqueada()"
+              />
+              @if (erroCampo(osErros(), 'modelo'); as erro) {
+                <span class="field-error">{{ erro }}</span>
+              }
+            </div>
+            <div class="field-group">
+              <label for="os-cor">Cor *</label>
+              <input
+                id="os-cor"
+                type="text"
+                name="osCor"
+                maxlength="50"
+                [ngModel]="osCor()"
+                (ngModelChange)="osCor.set($event)"
+                [disabled]="osBloqueada()"
+              />
+              @if (erroCampo(osErros(), 'cor'); as erro) {
+                <span class="field-error">{{ erro }}</span>
+              }
+            </div>
+            <div class="field-group">
+              <label for="os-ano">Ano</label>
+              <input
+                id="os-ano"
+                type="text"
+                name="osAno"
+                maxlength="4"
+                inputmode="numeric"
+                class="tabular-nums"
+                placeholder="Opcional"
+                [ngModel]="osAno()"
+                (ngModelChange)="osAno.set($event.replace(/[^0-9]/g, '').slice(0, 4))"
+                [disabled]="osBloqueada()"
+              />
+              @if (erroCampo(osErros(), 'ano'); as erro) {
+                <span class="field-error">{{ erro }}</span>
+              }
+            </div>
+          </div>
+
+          @if (buscandoHistoricoVeiculo()) {
+            <p class="text-muted" role="status" style="margin: 0.25rem 0 0">
+              Consultando histórico local da placa…
+            </p>
+          }
+
+          @if (historicoVeiculo(); as hist) {
+            <div class="veiculo-historico-box" role="status">
+              <div class="veiculo-historico-topo">
+                <div>
+                  <strong>
+                    Prontuário: veículo já atendido {{ hist.ultimasOrdens.length }}
+                    {{ hist.ultimasOrdens.length === 1 ? 'vez' : 'vezes' }} na oficina
+                  </strong>
+                  <div class="text-muted">
+                    Último atendimento: {{ hist.ultimoNomeCliente }}
+                  </div>
+                </div>
+                @if (osClienteId() === null) {
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    [disabled]="osBloqueada()"
+                    (click)="selecionarClienteDoHistorico()"
+                  >
+                    Selecionar {{ hist.ultimoNomeCliente }}
+                  </button>
+                }
+              </div>
+              <div class="veiculo-historico-lista">
+                @for (ant of hist.ultimasOrdens.slice(0, 3); track ant.id) {
+                  <div class="veiculo-historico-item tabular-nums">
+                    <span>
+                      <strong>#{{ ant.id }}</strong> · {{ ant.dataCriacaoUtc | date:'dd/MM/yyyy' }} — {{ ant.descricaoServico }}
+                    </span>
+                    <strong>{{ reais(ant.totalCentavos) }}</strong>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </section>
+
+        <!-- 3. SEÇÃO SERVIÇO, PEÇAS E MÃO DE OBRA -->
+        <section class="card">
+          <h2 class="card-title">Serviço e peças</h2>
+          <div class="field-group">
+            <label for="os-descricao">Descrição do serviço *</label>
+            <textarea
+              id="os-descricao"
+              rows="3"
+              name="osDescricao"
+              [ngModel]="osDescricao()"
+              (ngModelChange)="osDescricao.set($event)"
+              [disabled]="osBloqueada()"
+            ></textarea>
+            @if (erroCampo(osErros(), 'descricaoServico'); as erro) {
+              <span class="field-error">{{ erro }}</span>
+            }
+          </div>
+
+          <div class="pecas-header">
+            <div>
+              <h3 class="subsection-title">Peças utilizadas</h3>
+              <span class="text-muted">
+                Informe o custo, o total cobrado pelas peças e a mão de obra por unidade.
+              </span>
+            </div>
+            <button
+              type="button"
+              class="btn-secondary"
+              (click)="abrirModalPeca()"
+              [disabled]="osBloqueada()"
+            >
+              + Adicionar peça
+            </button>
+          </div>
+
+          @if (osPecas().length === 0) {
+            <div class="empty-box">
+              Nenhuma peça adicionada. Você pode registrar apenas a mão de obra do serviço abaixo.
+            </div>
+          } @else {
+            <div class="pecas-list">
+              @for (peca of osPecas(); track $index) {
+                <div class="peca-row tabular-nums">
+                  <div>
+                    <div class="peca-title">{{ peca.nome }}</div>
+                    <div class="peca-meta">
+                      {{ peca.quantidade }} unidade(s) •
+                      Custo por unidade: {{ reais(peca.custoUnitarioCentavos) }}
+                    </div>
+                    <div class="peca-meta">
+                      Mão de obra: {{ reais(peca.maoDeObraUnitariaCentavos) }} por unidade ·
+                      {{ reais(maoDeObraDaPeca(peca)) }} no item
+                    </div>
+                    @if (pecaRascunhoAbaixoDoCusto(peca)) {
+                      <div class="peca-alerta-margem">
+                        Atenção: valor cobrado abaixo do custo informado.
+                      </div>
+                    }
+                  </div>
+                  <div class="peca-actions">
+                    <strong>{{ subtotalPeca(peca) }}</strong>
+                    <button
+                      type="button"
+                      class="btn-icon-danger"
+                      (click)="removerPeca($index)"
+                      title="Remover peça"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+
+          <div class="servico-complementos servico-complementos-grid">
+            <div class="field-group">
+              <label for="os-mao-de-obra-avulsa">
+                Mão de obra avulsa / do serviço (R$)
+              </label>
+              <input
+                id="os-mao-de-obra-avulsa"
+                type="text"
+                name="osMaoDeObraAvulsa"
+                inputmode="numeric"
+                class="tabular-nums"
+                placeholder="0,00 (opcional)"
+                [ngModel]="osMaoDeObraAvulsa()"
+                (ngModelChange)="aoDigitarMaoDeObraAvulsa($event)"
+                [disabled]="osBloqueada()"
+              />
+              <p class="retorno-ajuda">
+                Use para serviços sem peças ou para adicionar mão de obra geral da OS (soma com a mão de obra das peças).
+              </p>
+              @if (erroCampo(osErros(), 'maoDeObraCentavos'); as erro) {
+                <span class="field-error">{{ erro }}</span>
+              }
+            </div>
+
+            <div class="field-group">
+              <div class="retorno-prazo field-group">
+                <label for="os-prazo-retorno">
+                  Prazo para retorno (dias) *
+                </label>
+                <div class="prazo-com-calendario"><input
+                  id="os-prazo-retorno"
+                  type="text"
+                  name="osPrazoRetornoDias"
+                  inputmode="numeric"
+                  class="tabular-nums"
+                  placeholder="Ex.: 30"
+                  [ngModel]="osPrazoRetornoDias()"
+                  (ngModelChange)="osPrazoRetornoDias.set($event.replace(/[^0-9]/g, ''))"
+                  [disabled]="osBloqueada() || !osNecessitaRetorno()"
+                />
+                <input class="calendario-inline" type="date" aria-label="Escolher data para calcular o prazo de retorno" [min]="dataHoje()" [disabled]="!osNecessitaRetorno() || osBloqueada()" (change)="selecionarDataRetorno($any($event.target).value)" />
+                </div>
+                @if (erroCampo(osErros(), 'prazoRetornoDias'); as erro) {
+                  <span class="field-error">{{ erro }}</span>
+                }
+              </div>
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="osNecessitaRetorno"
+                  [ngModel]="osNecessitaRetorno()"
+                  (ngModelChange)="osNecessitaRetorno.set($event)"
+                  [disabled]="osBloqueada()"
+                />
+                <span>Serviço necessita de retorno</span>
+              </label>
+              <p class="retorno-ajuda">O calendário calcula os dias a partir de hoje. O prazo será contado da conclusão da OS.</p>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. RESUMO FINANCEIRO E BOTÃO SALVAR -->
+        <section class="card totals-card tabular-nums">
+          <div class="total-line">
+            <span class="text-muted">Peças</span>
+            <span>{{ reais(totalPecasCentavos()) }}</span>
+          </div>
+          <div class="total-line">
+            <span class="text-muted">
+              Mão de obra
+              @if (temMaoDeObraAvulsa() && osPecas().length > 0) {
+                (avulsa {{ reais(maoDeObraAvulsaCentavos()) }} + peças)
+              }
+            </span>
+            <span>{{ reais(maoDeObraCentavos()) }}</span>
+          </div>
+          <hr class="section-divider" />
+          <div class="total-line total-line--grand">
+            <span>Total geral</span>
+            <span>{{ reais(totalGeralCentavos()) }}</span>
+          </div>
+
+          @if (erroCampo(osErros(), 'totalCentavos'); as erro) {
+            <p class="field-error" role="alert">{{ erro }}</p>
+          }
+
+          <label class="checkbox-label" style="margin-top: 0.75rem">
+            <input
+              type="checkbox"
+              name="osEhOrcamento"
+              [ngModel]="osEhOrcamento()"
+              (ngModelChange)="osEhOrcamento.set($event)"
+              [disabled]="osBloqueada()"
+            />
+            <span>Salvar como orçamento (aguardando aprovação do cliente)</span>
+          </label>
+
+          <div class="form-actions-end">
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="osBloqueada()"
+            >
+              {{
+                osEnviando()
+                  ? 'Salvando...'
+                  : osEhOrcamento()
+                    ? 'Salvar orçamento'
+                    : 'Salvar ordem de serviço'
+              }}
+            </button>
+          </div>
+        </section>
+      </form>
+    }
+  }
+
+  <!-- ABA 2: CLIENTES (CADASTRO + CONSULTA SEPARADOS COM TAB ORDER NATIVO) -->
+  @if (abaAtiva() === 'clientes') {
+    <section class="hero-header">
+      <div>
+        <h1 class="page-title">Clientes</h1>
+        <p class="page-subtitle">
+          Cadastre novos clientes e consulte os registros por nome, CPF ou CNPJ.
+        </p>
+      </div>
+    </section>
+
+    <hr class="section-divider" />
+
+    <div class="clientes-split">
+      <!-- COLUNA ESQUERDA: CADASTRO DE CLIENTE (TAB 1 -> 2 -> 3 -> 4) -->
+      <section class="card">
+        <h2 class="card-title">Cadastrar cliente</h2>
+        <p class="text-muted" style="margin-top: -0.25rem; margin-bottom: 1.25rem">
+          Preencha nome, CPF ou CNPJ e telefone com DDD.
+        </p>
+
+        @if (erroCadastroCliente(); as erro) {
+          <div class="alert-box alert-box--danger">{{ erro }}</div>
+        }
+        @if (ultimoClienteCriado(); as criado) {
+          <div class="alert-box alert-box--ok">
+            Cliente <strong>{{ criado.nome }}</strong> cadastrado com sucesso.
+          </div>
+        }
+
+        <form (ngSubmit)="salvarClienteNaAba()" novalidate>
+          <div class="field-group">
+            <label for="cad-nome">Nome completo *</label>
+            <input
+              id="cad-nome"
+              type="text"
+              name="cadNome"
+              maxlength="200"
+              [ngModel]="cadNome()"
+              (ngModelChange)="cadNome.set($event)"
+              [disabled]="salvandoCliente()"
+            />
+            @if (erroCampo(errosCampoCliente(), 'nome'); as erro) {
+              <span class="field-error">{{ erro }}</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label for="cad-doc">CPF ou CNPJ *</label>
+            <input
+              id="cad-doc"
+              type="text"
+              name="cadDocumento"
+              inputmode="numeric"
+              class="tabular-nums"
+              placeholder="CPF (11 dígitos) ou CNPJ (14 dígitos)"
+              [ngModel]="cadDocumento()"
+              (ngModelChange)="aoDigitarDocumentoCadastro($event)"
+              [disabled]="salvandoCliente()"
+            />
+            @if (erroCampo(errosCampoCliente(), 'documento'); as erro) {
+              <span class="field-error">{{ erro }}</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label for="cad-tel">Telefone / WhatsApp *</label>
+            <input
+              id="cad-tel"
+              type="tel"
+              name="cadTelefone"
+              inputmode="tel"
+              class="tabular-nums"
+              placeholder="(11) 98765-4321"
+              [ngModel]="cadTelefone()"
+              (ngModelChange)="aoDigitarTelefoneCadastro($event)"
+              [disabled]="salvandoCliente()"
+            />
+            @if (erroCampo(errosCampoCliente(), 'telefone'); as erro) {
+              <span class="field-error">{{ erro }}</span>
+            }
+          </div>
+
+          <button
+            type="submit"
+            class="btn-primary"
+            style="width: 100%; margin-top: 0.5rem"
+            [disabled]="salvandoCliente()"
+          >
+            {{ salvandoCliente() ? 'Salvando...' : 'Salvar cliente' }}
+          </button>
+        </form>
+      </section>
+
+      <!-- COLUNA DIREITA: CONSULTA DE CLIENTES -->
+      <section class="card">
+        <div class="card-header-row">
+          <div>
+            <h2 class="card-title" style="margin-bottom: 0.2rem">
+              Consulta de clientes
+            </h2>
+            <span class="text-muted">
+              {{ clientes().length }} cliente(s) ativo(s) cadastrado(s)
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn-secondary"
+            (click)="carregarClientes()"
+            [disabled]="carregandoClientes()"
+          >
+            Atualizar
+          </button>
+        </div>
+
+        <div class="field-group" style="margin-top: 1rem">
+          <label for="consulta-busca">Consultar por nome, CPF ou CNPJ</label>
+          <input
+            id="consulta-busca"
+            type="text"
+            placeholder="Digite para filtrar os clientes"
+            [ngModel]="filtroConsultaClientes()"
+            (ngModelChange)="filtroConsultaClientes.set($event)"
+          />
+        </div>
+
+        <label class="checkbox-label clientes-inativos-toggle">
+          <input
+            type="checkbox"
+            [ngModel]="mostrarClientesInativos()"
+            (ngModelChange)="mostrarClientesInativos.set($event)"
+          />
+          <span>Exibir clientes inativos</span>
+        </label>
+
+        @if (ultimoClienteEditado(); as editado) {
+          <div class="alert-box alert-box--ok" role="status">
+            <span>Cadastro de <strong>{{ editado }}</strong> atualizado com sucesso.</span>
+          </div>
+        }
+
+        @if (erroListaClientes(); as erro) {
+          <div class="alert-box alert-box--danger">{{ erro }}</div>
+        }
+
+        @if (!carregandoClientes() && clientesFiltradosConsulta().length === 0) {
+          <div class="empty-box">
+            {{
+              filtroConsultaClientes().trim()
+                ? 'Nenhum cliente encontrado para "' + filtroConsultaClientes().trim() + '".'
+                : 'Nenhum cliente cadastrado ainda.'
+            }}
+          </div>
+        } @else {
+          <div class="clientes-list">
+            @for (cli of clientesFiltradosConsulta(); track cli.id) {
+              <div class="cliente-row">
+                <div>
+                  <div class="cliente-name-row">
+                    <span class="cliente-name">{{ cli.nome }}</span>
+                    @if (!cli.ativo) {
+                      <span class="liquid-glass-chip status-pill status-pill--inativo">
+                        Inativo
+                      </span>
+                    }
+                  </div>
+                  <div class="cliente-meta tabular-nums">
+                    CPF/CNPJ: {{ docFormatado(cli.documento) }} • Tel.:
+                    {{ telFormatado(cli.telefone) }}
+                  </div>
+                </div>
+                <div class="cliente-row-acoes">
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="abrirEdicaoCliente(cli, editarClienteDialog)"
+                  >
+                    Editar
+                  </button>
+                  @if (cli.ativo) {
+                    <button
+                      type="button"
+                      class="btn-secondary"
+                      (click)="iniciarNovaOrdem(cli)"
+                    >
+                      Abrir OS
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </div>
+
+    <dialog
+      #editarClienteDialog
+      class="liquid-glass liquid-glass--modal os-detalhe cliente-modal"
+      aria-labelledby="titulo-editar-cliente"
+      (close)="aoFecharEdicaoCliente()"
+      (cancel)="aoCancelarEdicaoCliente($event)"
+    >
+      <div class="detalhe-header">
+        <div class="detalhe-titulo-grupo">
+          <h2 id="titulo-editar-cliente" class="detalhe-titulo">Editar cliente</h2>
+        </div>
+        <button
+          type="button"
+          class="btn-ghost detalhe-fechar"
+          [disabled]="editCliSalvando()"
+          (click)="editarClienteDialog.close()"
+        >
+          Fechar
+        </button>
+      </div>
+
+      <div class="detalhe-corpo">
+        @if (editCliErroGeral(); as erro) {
+          <div class="alert-box alert-box--danger" role="alert">{{ erro }}</div>
+        }
+
+        <form (ngSubmit)="salvarEdicaoCliente(editarClienteDialog)" novalidate>
+          <div class="field-group">
+            <label for="ecli-nome">Nome completo *</label>
+            <input
+              id="ecli-nome"
+              type="text"
+              name="editCliNome"
+              maxlength="200"
+              autofocus
+              [ngModel]="editCliNome()"
+              (ngModelChange)="editCliNome.set($event)"
+              [disabled]="editCliSalvando()"
+            />
+            @if (erroCampo(editCliErros(), 'nome'); as erro) {
+              <span class="field-error">{{ erro }}</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label for="ecli-doc">CPF ou CNPJ *</label>
+            <input
+              id="ecli-doc"
+              type="text"
+              name="editCliDoc"
+              inputmode="numeric"
+              class="tabular-nums"
+              [ngModel]="editCliDoc()"
+              (ngModelChange)="aoDigitarDocumentoEdicao($event)"
+              [disabled]="editCliSalvando()"
+            />
+            @if (erroCampo(editCliErros(), 'documento'); as erro) {
+              <span class="field-error">{{ erro }}</span>
+            }
+          </div>
+
+          <div class="field-group">
+            <label for="ecli-tel">Telefone / WhatsApp *</label>
+            <input
+              id="ecli-tel"
+              type="tel"
+              name="editCliTel"
+              inputmode="tel"
+              class="tabular-nums"
+              [ngModel]="editCliTel()"
+              (ngModelChange)="aoDigitarTelefoneEdicao($event)"
+              [disabled]="editCliSalvando()"
+            />
+            @if (erroCampo(editCliErros(), 'telefone'); as erro) {
+              <span class="field-error">{{ erro }}</span>
+            }
+          </div>
+
+          <label class="checkbox-label clientes-ativo-toggle">
+            <input
+              type="checkbox"
+              name="editCliAtivo"
+              [ngModel]="editCliAtivo()"
+              (ngModelChange)="editCliAtivo.set($event)"
+              [disabled]="editCliSalvando()"
+            />
+            <span>Cliente ativo (disponível para abrir novas OS)</span>
+          </label>
+
+          <p class="retorno-ajuda">
+            Alterar o cadastro não modifica os dados das ordens de serviço já emitidas.
+          </p>
+
+          <div class="detalhe-footer-acoes" style="margin-top: 1.25rem">
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="editCliSalvando()"
+              (click)="editarClienteDialog.close()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="btn-primary"
+              [disabled]="editCliSalvando()"
+            >
+              {{ editCliSalvando() ? 'Salvando...' : 'Salvar alterações' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </dialog>
+  }
+
+  <!-- ABA 3: FINANCEIRO / RELATÓRIOS (FASE 2 — SEMANAL E MENSAL) -->
+  @if (abaAtiva() === 'financeiro') {
+    <section class="hero-header">
+      <div>
+        <h1 class="page-title">Financeiro</h1>
+        <p class="page-subtitle">
+          Resumo semanal, mensal e personalizado discriminando resultado das peças e mão de obra.
+        </p>
+      </div>
+      <button
+        type="button"
+        class="btn-secondary"
+        [disabled]="finCarregando()"
+        (click)="carregarRelatorioFinanceiro()"
+      >
+        {{ finCarregando() ? 'Atualizando...' : 'Atualizar' }}
+      </button>
+    </section>
+
+    <section class="card fin-filtros-card" aria-label="Filtros do relatório financeiro">
+      <div class="fin-presets">
+        <button
+          type="button"
+          class="btn-secondary"
+          [class.btn-preset--ativo]="finPeriodo() === 'semana'"
+          (click)="aplicarPresetFinanceiro('semana')"
+        >
+          Semana atual
+        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          [class.btn-preset--ativo]="finPeriodo() === 'mes'"
+          (click)="aplicarPresetFinanceiro('mes')"
+        >
+          Mês atual
+        </button>
+        <button
+          type="button"
+          class="btn-secondary"
+          [class.btn-preset--ativo]="finPeriodo() === 'mes_anterior'"
+          (click)="aplicarPresetFinanceiro('mes_anterior')"
+        >
+          Mês anterior
+        </button>
+      </div>
+
+      <form class="fin-filtros-grid" (ngSubmit)="carregarRelatorioFinanceiro()">
+        <div class="field-group">
+          <label for="fin-inicio">Data inicial</label>
+          <input
+            id="fin-inicio"
+            type="date"
+            name="finInicio"
+            [ngModel]="finInicio()"
+            (ngModelChange)="finInicio.set($event); finPeriodo.set('personalizado')"
+          />
+        </div>
+        <div class="field-group">
+          <label for="fin-fim">Data final</label>
+          <input
+            id="fin-fim"
+            type="date"
+            name="finFim"
+            [ngModel]="finFim()"
+            (ngModelChange)="finFim.set($event); finPeriodo.set('personalizado')"
+          />
+        </div>
+        <div class="field-group">
+          <label for="fin-criterio">Critério das OS</label>
+          <select
+            id="fin-criterio"
+            name="finCriterio"
+            [ngModel]="finCriterio()"
+            (ngModelChange)="alterarCriterioFinanceiro($event)"
+          >
+            <option value="conclusao">Concluídas (por data de conclusão)</option>
+            <option value="abertura">Todas as OS (por data de abertura)</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary fin-btn-filtrar" [disabled]="finCarregando()">
+          Aplicar
+        </button>
+      </form>
+    </section>
+
+    @if (finErro(); as erro) {
+      <div class="alert-box alert-box--danger" role="alert">{{ erro }}</div>
+    }
+
+    @if (finCarregando() && !finRelatorio()) {
+      <p class="os-estado-msg" role="status">Calculando resumo financeiro…</p>
+    }
+
+    @if (finRelatorio(); as rel) {
+      @if (rel.quantidadePecasComCustoDesconhecido > 0) {
+        <div class="alert-box alert-box--warn" role="status">
+          <div class="alert-content">
+            <strong>Custos históricos ausentes detectados no período</strong>
+            <span class="tabular-nums">
+              {{ rel.quantidadePecasComCustoDesconhecido }} peça(s) em {{ rel.quantidadeOrdensComCustoDesconhecido }} OS antiga(s)
+              (bruto de {{ reais(rel.brutoPecasSemCustoCentavos) }}) não possuem custo informado e foram excluídas do líquido das peças para evitar distorção.
+            </span>
+          </div>
+        </div>
+      }
+
+      <div class="fin-cards-grid tabular-nums">
+        <article class="card fin-metric-card fin-metric-card--destaque">
+          <span class="fin-metric-label">Líquido operacional</span>
+          <strong class="fin-metric-valor">{{ reais(rel.liquidoOperacionalCentavos) }}</strong>
+          <span class="text-muted">
+            Líquido das peças ({{ reais(rel.liquidoPecasCentavos) }}) + Mão de obra ({{ reais(rel.maoDeObraCentavos) }})
+          </span>
+          <span class="fin-aviso-contabil">
+            Não desconta custos fixos da oficina (não é lucro líquido total do negócio).
+          </span>
+        </article>
+
+        <article class="card fin-metric-card">
+          <span class="fin-metric-label">Resultado das peças (discriminado)</span>
+          <strong class="fin-metric-valor">{{ reais(rel.liquidoPecasCentavos) }}</strong>
+          <div class="fin-sublinhas">
+            <span>Bruto cobrado: <strong>{{ reais(rel.brutoPecasCentavos) }}</strong></span>
+            <span>Custo fornecedor: <strong>{{ reais(rel.custoPecasCentavos) }}</strong></span>
+          </div>
+        </article>
+
+        <article class="card fin-metric-card">
+          <span class="fin-metric-label">Mão de obra (discriminada)</span>
+          <strong class="fin-metric-valor">{{ reais(rel.maoDeObraCentavos) }}</strong>
+          <span class="text-muted">
+            Entra integralmente no líquido operacional, separada das peças.
+          </span>
+        </article>
+
+        <article class="card fin-metric-card">
+          <span class="fin-metric-label">Total cobrado &amp; volume</span>
+          <strong class="fin-metric-valor">{{ reais(rel.totalCobradoCentavos) }}</strong>
+          <div class="fin-sublinhas">
+            <span>Ticket médio: <strong>{{ reais(rel.ticketMedioCentavos) }}</strong></span>
+            <span>
+              {{ rel.quantidadeOrdens }} OS ({{ rel.quantidadeOrdensComPecas }} com peças · {{ rel.quantidadeOrdensSomenteMaoDeObra }} só mão de obra)
+            </span>
+            @if (rel.quantidadeOrcamentosPendentes > 0) {
+              <span>Orçamentos pendentes no período: <strong>{{ rel.quantidadeOrcamentosPendentes }}</strong></span>
+            }
+          </div>
+        </article>
+      </div>
+    }
+  }
+
+  <!-- ABA 4: CONTA PESSOAL & GESTÃO DE USUÁRIOS -->
+  @if (abaAtiva() === 'conta') {
+    <section class="hero-header">
+      <div>
+        <h1 class="page-title">{{ ehAdmin() ? 'Conta & Usuários' : 'Minha conta' }}</h1>
+        <p class="page-subtitle">
+          Atualize seus dados de acesso, altere sua senha e gerencie as contas da oficina.
+        </p>
+      </div>
+      <div class="liquid-glass-chip status-pill status-pill--concluida">
+        <span class="status-dot" aria-hidden="true"></span>
+        Logado como {{ usuarioAtual()?.name }} ({{ usuarioAtual()?.role }})
+      </div>
+    </section>
+
+    <hr class="section-divider" />
+
+    <div class="clientes-split">
+      <!-- COLUNA ESQUERDA: MEU PERFIL + ALTERAR SENHA -->
+      <section class="card">
+        <h2 class="card-title">Meus dados</h2>
+        @if (perfilErro(); as err) {
+          <div class="alert-box alert-box--danger">{{ err }}</div>
+        }
+        @if (perfilMensagem(); as ok) {
+          <div class="alert-box alert-box--ok">{{ ok }}</div>
+        }
+
+        <form (ngSubmit)="salvarMeuPerfil()" novalidate>
+          <div class="field-group">
+            <label for="perf-user">Usuário *</label>
+            <input
+              id="perf-user"
+              type="text"
+              name="perfilUserName"
+              [ngModel]="perfilUserName()"
+              (ngModelChange)="perfilUserName.set($event)"
+              [disabled]="perfilSalvando()"
+            />
+          </div>
+          <div class="field-group">
+            <label for="perf-nome">Nome completo *</label>
+            <input
+              id="perf-nome"
+              type="text"
+              name="perfilNome"
+              [ngModel]="perfilNome()"
+              (ngModelChange)="perfilNome.set($event)"
+              [disabled]="perfilSalvando()"
+            />
+          </div>
+          <div class="field-group">
+            <label for="perf-email">E-mail (opcional)</label>
+            <input
+              id="perf-email"
+              type="text"
+              name="perfilEmail"
+              [ngModel]="perfilEmail()"
+              (ngModelChange)="perfilEmail.set($event)"
+              [disabled]="perfilSalvando()"
+            />
+          </div>
+          <button type="submit" class="btn-primary" [disabled]="perfilSalvando()">
+            {{ perfilSalvando() ? 'Salvando...' : 'Salvar meus dados' }}
+          </button>
+        </form>
+
+        <hr class="section-divider" />
+
+        <h2 class="card-title">Alterar minha senha</h2>
+        @if (senhaErro(); as err) {
+          <div class="alert-box alert-box--danger">{{ err }}</div>
+        }
+        @if (senhaMensagem(); as ok) {
+          <div class="alert-box alert-box--ok">{{ ok }}</div>
+        }
+
+        <form (ngSubmit)="salvarNovaSenhaPropria()" novalidate>
+          <div class="field-group">
+            <label for="senha-atual">Senha atual *</label>
+            <input
+              id="senha-atual"
+              type="password"
+              name="senhaAtual"
+              autocomplete="current-password"
+              [ngModel]="senhaAtual()"
+              (ngModelChange)="senhaAtual.set($event)"
+              [disabled]="senhaSalvando()"
+            />
+          </div>
+          <div class="field-group">
+            <label for="senha-nova">Nova senha (mín. 6 caracteres) *</label>
+            <input
+              id="senha-nova"
+              type="password"
+              name="senhaNova"
+              autocomplete="new-password"
+              [ngModel]="senhaNova()"
+              (ngModelChange)="senhaNova.set($event)"
+              [disabled]="senhaSalvando()"
+            />
+          </div>
+          <button type="submit" class="btn-secondary" [disabled]="senhaSalvando()">
+            {{ senhaSalvando() ? 'Alterando...' : 'Atualizar senha' }}
+          </button>
+        </form>
+      </section>
+
+      <!-- COLUNA DIREITA: GESTÃO DE USUÁRIOS (SOMENTE ADMIN) -->
+      @if (ehAdmin()) {
+        <section class="card">
+          <div class="card-header-row">
+            <div>
+              <h2 class="card-title" style="margin-bottom: 0.2rem">Usuários da oficina</h2>
+              <span class="text-muted">{{ usuariosLista().length }} conta(s) cadastrada(s)</span>
+            </div>
+            <button
+              type="button"
+              class="btn-secondary"
+              [disabled]="carregandoUsuarios()"
+              (click)="carregarUsuarios()"
+            >
+              Atualizar
+            </button>
+          </div>
+
+          @if (novoUsuErro(); as err) {
+            <div class="alert-box alert-box--danger" style="margin-top: 1rem">{{ err }}</div>
+          }
+          @if (novoUsuMensagem(); as ok) {
+            <div class="alert-box alert-box--ok" style="margin-top: 1rem">{{ ok }}</div>
+          }
+
+          <form style="margin-top: 1rem" (ngSubmit)="criarNovoUsuario()" novalidate>
+            <div class="form-row-2">
+              <div class="field-group">
+                <label for="nusu-user">Novo usuário *</label>
+                <input
+                  id="nusu-user"
+                  type="text"
+                  name="novoUsuUserName"
+                  placeholder="Ex.: mecanico1"
+                  [ngModel]="novoUsuUserName()"
+                  (ngModelChange)="novoUsuUserName.set($event)"
+                  [disabled]="novoUsuSalvando()"
+                />
+              </div>
+              <div class="field-group">
+                <label for="nusu-role">Perfil *</label>
+                <select
+                  id="nusu-role"
+                  name="novoUsuRole"
+                  [ngModel]="novoUsuRole()"
+                  (ngModelChange)="novoUsuRole.set($event)"
+                  [disabled]="novoUsuSalvando()"
+                >
+                  <option value="Operador">Operador (Balcão / OS)</option>
+                  <option value="Admin">Admin (Total + Financeiro)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="field-group">
+                <label for="nusu-nome">Nome completo *</label>
+                <input
+                  id="nusu-nome"
+                  type="text"
+                  name="novoUsuNome"
+                  [ngModel]="novoUsuNome()"
+                  (ngModelChange)="novoUsuNome.set($event)"
+                  [disabled]="novoUsuSalvando()"
+                />
+              </div>
+              <div class="field-group">
+                <label for="nusu-senha">Senha inicial *</label>
+                <input
+                  id="nusu-senha"
+                  type="password"
+                  name="novoUsuSenha"
+                  autocomplete="new-password"
+                  placeholder="Mínimo 6 caracteres"
+                  [ngModel]="novoUsuSenha()"
+                  (ngModelChange)="novoUsuSenha.set($event)"
+                  [disabled]="novoUsuSalvando()"
+                />
+              </div>
+            </div>
+
+            <button type="submit" class="btn-primary" [disabled]="novoUsuSalvando()">
+              {{ novoUsuSalvando() ? 'Criando...' : '+ Criar usuário' }}
+            </button>
+          </form>
+
+          <hr class="section-divider" />
+
+          <div class="clientes-list">
+            @for (u of usuariosLista(); track u.id) {
+              <div class="cliente-row">
+                <div>
+                  <div class="cliente-name-row">
+                    <span class="cliente-name">{{ u.name }}</span>
+                    <span class="placa-badge tabular-nums">{{ u.userName }}</span>
+                    <span
+                      class="liquid-glass-chip status-pill"
+                      [class.status-pill--concluida]="u.isActive"
+                      [class.status-pill--inativo]="!u.isActive"
+                    >
+                      {{ u.role }} · {{ u.isActive ? 'Ativo' : 'Inativo' }}
+                    </span>
+                  </div>
+                </div>
+                <div class="cliente-row-acoes">
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="alternarRoleUsuario(u)"
+                  >
+                    Tornar {{ u.role === 'Admin' ? 'Operador' : 'Admin' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-secondary"
+                    (click)="alternarAtivoUsuario(u)"
+                  >
+                    {{ u.isActive ? 'Desativar' : 'Ativar' }}
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+</main>
+
+<!-- MODAL LIQUID GLASS: ADICIONAR PEÇA (CUSTO OBRIGATÓRIO) -->
+@if (modalPecaAberta()) {
+  <div class="liquid-glass-scrim" role="dialog" aria-modal="true" aria-labelledby="titulo-adicionar-peca">
+    <div class="liquid-glass liquid-glass--modal modal-box modal-box--peca" appLiquidGlass>
+      <h2 id="titulo-adicionar-peca" class="card-title">Adicionar peça</h2>
+      <form (ngSubmit)="adicionarPecaDoModal()" novalidate>
+        <div class="field-group">
+          <label for="peca-nome">Peça *</label>
+          <input
+            id="peca-nome"
+            type="text"
+            name="pecaNome"
+            maxlength="200"
+            [ngModel]="pecaNome()"
+            (ngModelChange)="pecaNome.set($event)"
+          />
+          @if (pecaErros()['nome']; as erro) {
+            <span class="field-error">{{ erro }}</span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label for="peca-qtd">Quantidade *</label>
+          <input
+            id="peca-qtd"
+            type="text"
+            name="pecaQuantidade"
+            inputmode="numeric"
+            class="tabular-nums"
+            [ngModel]="pecaQuantidade()"
+            (ngModelChange)="pecaQuantidade.set($event.replace(/[^0-9]/g, ''))"
+          />
+          @if (pecaErros()['quantidade']; as erro) {
+            <span class="field-error">{{ erro }}</span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label for="peca-custo">Custo por unidade (R$) *</label>
+          <input
+            id="peca-custo"
+            type="text"
+            name="pecaCusto"
+            inputmode="numeric"
+            class="tabular-nums"
+            placeholder="Valor pago ao fornecedor, por unidade"
+            [ngModel]="pecaCusto()"
+            (ngModelChange)="aoDigitarPecaCusto($event)"
+          />
+          @if (pecaErros()['custo']; as erro) {
+            <span class="field-error">{{ erro }}</span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label for="peca-valor">Total cobrado pelas peças (R$) *</label>
+          <input
+            id="peca-valor"
+            type="text"
+            name="pecaValorCobrado"
+            inputmode="numeric"
+            class="tabular-nums"
+            placeholder="Total das peças, sem mão de obra"
+            [ngModel]="pecaValorCobrado()"
+            (ngModelChange)="aoDigitarPecaValorCobrado($event)"
+          />
+          @if (pecaErros()['valor']; as erro) {
+            <span class="field-error">{{ erro }}</span>
+          }
+          @if (pecaAbaixoDoCusto(); as alerta) {
+            <div class="alert-box alert-box--warn peca-modal-alerta" role="status">
+              <span>
+                <strong>Atenção:</strong> o total cobrado ({{ reais(alerta.cobrado) }}) está abaixo do custo total das peças ({{ reais(alerta.custoTotal) }}).
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="field-group">
+          <label for="peca-mao-obra">Mão de obra por unidade (R$) *</label>
+          <input
+            id="peca-mao-obra"
+            type="text"
+            name="pecaMaoDeObra"
+            inputmode="numeric"
+            class="tabular-nums"
+            placeholder="0,00"
+            aria-describedby="peca-mao-obra-ajuda"
+            [attr.aria-invalid]="pecaErros()['maoDeObra'] ? 'true' : null"
+            [ngModel]="pecaMaoDeObra()"
+            (ngModelChange)="aoDigitarMaoDeObraDaPeca($event)"
+          />
+          <span id="peca-mao-obra-ajuda" class="text-muted">
+            Multiplicada pela quantidade e somada à mão de obra da OS.
+          </span>
+          @if (pecaErros()['maoDeObra']; as erro) {
+            <span class="field-error" role="alert">{{ erro }}</span>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-ghost"
+            (click)="modalPecaAberta.set(false)"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn-primary">Adicionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- MODAL LIQUID GLASS: CADASTRAR CLIENTE RÁPIDO PELA NOVA OS -->
+@if (modalNovoClienteAberto()) {
+  <div class="liquid-glass-scrim" role="dialog" aria-modal="true">
+    <div class="liquid-glass liquid-glass--modal modal-box" appLiquidGlass>
+      <h2 class="card-title">Novo cliente</h2>
+      @if (modalCliErroGeral(); as erro) {
+        <div class="alert-box alert-box--danger">{{ erro }}</div>
+      }
+      <form (ngSubmit)="salvarClienteDoModal()" novalidate>
+        <div class="field-group">
+          <label for="mcli-nome">Nome completo *</label>
+          <input
+            id="mcli-nome"
+            type="text"
+            name="modalCliNome"
+            [ngModel]="modalCliNome()"
+            (ngModelChange)="modalCliNome.set($event)"
+          />
+          @if (erroCampo(modalCliErros(), 'nome'); as erro) {
+            <span class="field-error">{{ erro }}</span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label for="mcli-doc">CPF ou CNPJ *</label>
+          <input
+            id="mcli-doc"
+            type="text"
+            name="modalCliDoc"
+            inputmode="numeric"
+            class="tabular-nums"
+            [ngModel]="modalCliDoc()"
+            (ngModelChange)="aoDigitarDocumentoModal($event)"
+          />
+          @if (erroCampo(modalCliErros(), 'documento'); as erro) {
+            <span class="field-error">{{ erro }}</span>
+          }
+        </div>
+
+        <div class="field-group">
+          <label for="mcli-tel">Telefone / WhatsApp *</label>
+          <input
+            id="mcli-tel"
+            type="tel"
+            name="modalCliTel"
+            inputmode="tel"
+            class="tabular-nums"
+            [ngModel]="modalCliTel()"
+            (ngModelChange)="aoDigitarTelefoneModal($event)"
+          />
+          @if (erroCampo(modalCliErros(), 'telefone'); as erro) {
+            <span class="field-error">{{ erro }}</span>
+          }
+        </div>
+
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn-ghost"
+            (click)="modalNovoClienteAberto.set(false)"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            class="btn-primary"
+            [disabled]="modalCliSalvando()"
+          >
+            {{ modalCliSalvando() ? 'Salvando...' : 'Salvar cliente' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- VIA DO CLIENTE (IMPRESSÃO / PDF NATIVO — SEM CUSTOS INTERNOS DA OFICINA) -->
+@if (detalhe(); as osPrint) {
+  <section class="print-only-sheet" aria-hidden="true">
+    <header class="print-header">
+      <img src="logo-desanti.png" alt="DeSanti Automotiva" class="print-logo" />
+      <div class="print-meta tabular-nums">
+        <strong>
+          {{ statusDaOrdem(osPrint) === 'orcamento' ? 'Orçamento' : 'Ordem de Serviço' }} #{{ osPrint.id }}
+        </strong>
+        <div>Status: {{ rotuloStatusOrdem(osPrint) }}</div>
+        <div>Abertura: {{ osPrint.dataCriacaoUtc | date:'dd/MM/yyyy' }}</div>
+        @if (osPrint.dataConclusaoUtc) {
+          <div>Conclusão: {{ osPrint.dataConclusaoUtc | date:'dd/MM/yyyy' }}</div>
+        }
+        @if (osPrint.dataPrevistaRetornoUtc) {
+          <div>Previsão de retorno: {{ osPrint.dataPrevistaRetornoUtc | date:'dd/MM/yyyy' }}</div>
+        }
+      </div>
+    </header>
+
+    <div class="print-grid">
+      <div>
+        <h3>Cliente</h3>
+        <div><strong>{{ osPrint.nomeCliente }}</strong></div>
+        <div class="tabular-nums">Documento: {{ docFormatado(osPrint.documentoCliente) }}</div>
+        <div class="tabular-nums">Telefone: {{ telFormatado(osPrint.telefoneCliente) }}</div>
+      </div>
+      <div>
+        <h3>Veículo</h3>
+        <div><strong>{{ osPrint.marca }} {{ osPrint.modelo }}</strong></div>
+        <div class="tabular-nums">Placa: {{ placaFormatada(osPrint.placa) }}</div>
+        <div class="tabular-nums">Cor: {{ osPrint.cor }} · Ano: {{ osPrint.ano ?? 'Não informado' }}</div>
+      </div>
+    </div>
+
+    <div class="print-section">
+      <h3>Serviço executado</h3>
+      <p class="print-descricao">{{ osPrint.descricaoServico }}</p>
+    </div>
+
+    @if (osPrint.pecas.length > 0) {
+      <div class="print-section">
+        <h3>Peças</h3>
+        <table class="print-table tabular-nums">
+          <thead>
+            <tr>
+              <th>Descrição</th>
+              <th>Qtd.</th>
+              <th class="print-num">Valor</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (peca of osPrint.pecas; track $index) {
+              <tr>
+                <td>{{ peca.nome }}</td>
+                <td>{{ peca.quantidade }}</td>
+                <td class="print-num">
+                  {{ reais(peca.valorTotalCentavos ?? peca.quantidade * peca.valorUnitarioCentavos) }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+
+    <div class="print-totais tabular-nums">
+      <div class="print-total-row">
+        <span>Mão de obra</span>
+        <strong>{{ reais(osPrint.maoDeObraCentavos) }}</strong>
+      </div>
+      <div class="print-total-row print-total-row--grand">
+        <span>Total da Ordem de Serviço</span>
+        <strong>{{ reais(osPrint.totalCentavos) }}</strong>
+      </div>
+    </div>
+
+    <footer class="print-footer">
+      <div>DeSanti Automotiva — Via do cliente</div>
+      <div class="print-assinatura">Assinatura do cliente: ____________________________________</div>
+    </footer>
+  </section>
+}
+}
