@@ -4,3 +4,41 @@ GET {{DeSanti.API_HostAddress}}/openapi/v1.json
 Accept: application/json
 
 ###
+
+### Clientes já cadastrados
+GET {{DeSanti.API_HostAddress}}/api/v1/clientes
+Accept: application/json
+
+### Cadastro fictício, SOMENTE no banco local de desenvolvimento
+# A criação de cliente retorna um id. Use esse id na variável clienteId abaixo.
+POST {{DeSanti.API_HostAddress}}/api/v1/clientes
+Content-Type: application/json
+
+{
+  "nome": "Cliente Teste",
+  "email": "teste@example.invalid",
+  "documento": "00000000000",
+  "telefone": "00000000000"
+}
+
+### Substitua 1 pelo id de um cliente ativo do seu banco de desenvolvimento
+@clienteId = 1
+
+POST {{DeSanti.API_HostAddress}}/api/v1/ordens-servico
+Content-Type: application/json
+
+{
+  "clienteId": {{clienteId}},
+  "placa": "AAA0A00",
+  "marca": "Marca Teste",
+  "modelo": "Modelo Teste",
+  "cor": "Azul",
+  "ano": null,
+  "descricaoServico": "Serviço de teste",
+  "pecas": [
+    { "nome": "Peça teste", "quantidade": 3, "valorUnitarioCentavos": 101, "custoUnitarioCentavos": 70 }
+  ],
+  "maoDeObraCentavos": 12000,
+  "necessitaRetorno": false,
+  "prazoRetornoDias": null
+}

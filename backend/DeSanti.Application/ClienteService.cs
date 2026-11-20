@@ -1,6 +1,7 @@
 using DeSanti.Application.DTOs.Cliente;
 using DeSanti.Application.Interfaces.Repositories;
 using DeSanti.Application.Interfaces.Services;
+using DeSanti.Application.Validators.Clientes;
 using DeSanti.Domain;
 
 namespace DeSanti.Application;
@@ -13,15 +14,18 @@ public class ClienteService : IClienteService
     {
         _repository = repository;
     }
-    
+
     public async Task<ResponseClienteDto> AddClienteAsync(CreateClienteDto dto)
     {
+        await VerificarDocumentoAsync(CriarClienteValidator.SomenteDigitos(dto.Documento), null);
         Cliente cliente = new()
         {
-            Nome = dto.Nome,
-            Email = dto.Email,
-            Telefone = dto.Telefone,
-            Documento = dto.Documento,
+            Nome = (dto.Nome ?? string.Empty).Trim(),
+            Email = (dto.Email ?? string.Empty).Trim(),
+            Telefone = CriarClienteValidator.SomenteDigitos(dto.Telefone),
+            Documento = CriarClienteValidator.SomenteDigitos(dto.Documento),
+            // Alinha a criação ao default true do mapping e do schema de Clientes.
+            Ativo = true,
             DataCriacao = DateTime.UtcNow
         };
 
@@ -34,11 +38,14 @@ public class ClienteService : IClienteService
         Cliente? cliente = await _repository.GetByIdAsync(dto.Id);
 
         if (cliente == null) return false;
-        
-        if (!string.IsNullOrWhiteSpace(dto.Nome)) cliente.Nome = dto.Nome;
-        if (!string.IsNullOrWhiteSpace(dto.Email)) cliente.Email = dto.Email;
-        if (!string.IsNullOrWhiteSpace(dto.Telefone)) cliente.Telefone = dto.Telefone;
-        if (!string.IsNullOrWhiteSpace(dto.Documento)) cliente.Documento = dto.Documento;
+
+        var documento = CriarClienteValidator.SomenteDigitos(dto.Documento);
+        await VerificarDocumentoAsync(documento, dto.Id);
+
+        cliente.Nome = (dto.Nome ?? string.Empty).Trim();
+        cliente.Email = (dto.Email ?? string.Empty).Trim();
+        cliente.Telefone = CriarClienteValidator.SomenteDigitos(dto.Telefone);
+        cliente.Documento = documento;
         cliente.DataAlteracao = DateTime.UtcNow;
         cliente.Ativo = dto.Ativo;
 
@@ -50,11 +57,11 @@ public class ClienteService : IClienteService
     public async Task<bool> DeleteClienteAsync(DesativarClienteDto dto)
     {
         Cliente? cliente = await _repository.GetByIdAsync(dto.Id);
-        
+
         if (cliente == null) return false;
-        
+
         cliente.Ativo = dto.Ativo;
-        
+
         await _repository.UpdateAsync(cliente);
 
         return true;
@@ -76,10 +83,16 @@ public class ClienteService : IClienteService
     public async Task<ResponseClienteDto?> GetByIdAsync(long id)
     {
         Cliente? cliente = await _repository.GetByIdAsync(id);
-        
+
         if (cliente == null) return null;
-        
+
         return MapDto(cliente);
+    }
+
+    private async Task VerificarDocumentoAsync(string documento, long? ignorarId)
+    {
+        if (await _repository.ExisteComDocumentoAsync(documento, ignorarId))
+            throw new DocumentoDuplicadoException();
     }
 
     private static ResponseClienteDto MapDto(Cliente cliente)

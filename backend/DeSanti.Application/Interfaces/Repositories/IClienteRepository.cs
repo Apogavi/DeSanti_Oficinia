@@ -9,4 +9,5 @@ public interface IClienteRepository
     Task DeleteAsync(Cliente cliente);
     Task<List<Cliente>> GetAllAsync();
     Task<Cliente?> GetByIdAsync(long id);
+    Task<bool> ExisteComDocumentoAsync(string documentoNormalizado, long? ignorarId = null);
 }

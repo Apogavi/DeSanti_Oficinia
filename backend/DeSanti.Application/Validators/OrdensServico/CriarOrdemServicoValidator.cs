@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using DeSanti.Application.DTOs.OrdensServico;
+using DeSanti.Domain;
 
 namespace DeSanti.Application.Validators.OrdensServico;
 
@@ -11,14 +12,8 @@ public static class CriarOrdemServicoValidator
 
         void Erro(string campo, string mensagem) => erros[campo] = [mensagem];
 
-        if (string.IsNullOrWhiteSpace(pedido.NomeCliente))
-            Erro("nomeCliente", "Informe o nome do cliente.");
-
-        if (!CpfValido(pedido.Cpf))
-            Erro("cpf", "CPF inválido.");
-
-        if (!Regex.IsMatch(pedido.Telefone ?? "", @"^\d{11}$"))
-            Erro("telefone", "Informe um celular com DDD.");
+        if (pedido.ClienteId <= 0)
+            Erro("clienteId", "Selecione um cliente.");
 
         if (!Regex.IsMatch(pedido.Placa ?? "", @"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$"))
             Erro("placa", "Placa inválida.");
@@ -31,6 +26,11 @@ public static class CriarOrdemServicoValidator
 
         if (string.IsNullOrWhiteSpace(pedido.Cor))
             Erro("cor", "Informe a cor.");
+
+        // Os limites refletem os mappings existentes; evitam truncamento no MySQL.
+        if (pedido.Marca?.Length > 100) Erro("marca", "Use até 100 caracteres.");
+        if (pedido.Modelo?.Length > 100) Erro("modelo", "Use até 100 caracteres.");
+        if (pedido.Cor?.Length > 50) Erro("cor", "Use até 50 caracteres.");
 
         if (pedido.Ano is int ano && (ano < 1900 || ano > DateTime.Today.Year + 1))
             Erro("ano", "Informe um ano válido.");
@@ -54,11 +54,21 @@ public static class CriarOrdemServicoValidator
                 if (peca is null || string.IsNullOrWhiteSpace(peca.Nome))
                     Erro($"pecas[{i}].nome", "Informe o nome da peça.");
 
+                if (peca?.Nome?.Length > 200)
+                    Erro($"pecas[{i}].nome", "Use até 200 caracteres.");
+
                 if (peca is null || peca.Quantidade <= 0)
                     Erro($"pecas[{i}].quantidade", "A quantidade deve ser maior que zero.");
 
                 if (peca is null || peca.ValorUnitarioCentavos < 0)
                     Erro($"pecas[{i}].valorUnitarioCentavos", "O valor não pode ser negativo.");
+
+                if (peca?.ValorTotalCentavos < 0)
+                    Erro($"pecas[{i}].valorTotalCentavos", "O total não pode ser negativo.");
+                if (peca is null || peca.CustoUnitarioCentavos is null)
+                    Erro($"pecas[{i}].custoUnitarioCentavos", "Informe o custo da peça.");
+                else if (peca.CustoUnitarioCentavos < 0)
+                    Erro($"pecas[{i}].custoUnitarioCentavos", "O custo da peça não pode ser negativo.");
             }
         }
 
@@ -68,31 +78,23 @@ public static class CriarOrdemServicoValidator
         if (!pedido.NecessitaRetorno && pedido.PrazoRetornoDias is not null)
             Erro("prazoRetornoDias", "Deixe o prazo vazio quando não houver retorno.");
 
-        return erros;
-    }
-
-    private static bool CpfValido(string? cpf)
-    {
-        if (cpf is null ||
-            !Regex.IsMatch(cpf, @"^\d{11}$") ||
-            cpf.Distinct().Count() == 1)
-            return false;
-
-        for (var posicao = 9; posicao <= 10; posicao++)
+        if (erros.Count == 0)
         {
-            var soma = 0;
-
-            for (var i = 0; i < posicao; i++)
-                soma += (cpf[i] - '0') * (posicao + 1 - i);
-
-            var verificador = (soma * 10) % 11;
-
-            if (verificador == 10) verificador = 0;
-
-            if (verificador != cpf[posicao] - '0')
-                return false;
+            try
+            {
+                OrdemServico.CalcularTotalCentavos(pedido.Pecas!.Select(p => new PecaOrdemServico
+                {
+                    Quantidade = p.Quantidade,
+                    ValorTotalCentavos = p.ValorTotalCentavos,
+                    ValorUnitarioCentavos = p.ValorUnitarioCentavos
+                }), pedido.MaoDeObraCentavos);
+            }
+            catch (OverflowException)
+            {
+                Erro("totalCentavos", "O total excede o limite de um inteiro de 64 bits.");
+            }
         }
 
-        return true;
+        return erros;
     }
 }

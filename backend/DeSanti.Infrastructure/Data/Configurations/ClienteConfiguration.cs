@@ -36,6 +36,7 @@ public class ClienteConfiguration : IEntityTypeConfiguration<Cliente>
             .HasDatabaseName("idx_clientes_nome");
         
         builder.HasIndex(c => c.Documento)
+            .IsUnique()
             .HasDatabaseName("idx_clientes_documento");
     }
 }

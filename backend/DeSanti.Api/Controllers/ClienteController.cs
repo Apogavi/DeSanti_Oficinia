@@ -1,11 +1,14 @@
 using DeSanti.Application.DTOs.Cliente;
 using DeSanti.Application.Interfaces.Services;
+using DeSanti.Application.Validators.Clientes;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DeSanti.API.Controllers;
 
 [ApiController]
 [Route("api/v1/clientes")]
+[Authorize]
 public class ClienteController : ControllerBase
 {
     private readonly IClienteService _service;
@@ -32,25 +35,55 @@ public class ClienteController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAsync([FromBody] CreateClienteDto dto)
+    [ProducesResponseType<ResponseClienteDto>(StatusCodes.Status201Created)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateAsync([FromBody] CreateClienteDto? dto)
     {
-        if (dto == null) return BadRequest(new { message = "Preencha as informações do cliente." });
+        var erros = CriarClienteValidator.Validar(dto);
+        if (erros.Count > 0)
+        {
+            return BadRequest(new ValidationProblemDetails(erros)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Confira os dados do cliente."
+            });
+        }
         
-        var cliente = await _service.AddClienteAsync(dto);
+        ResponseClienteDto cliente;
+        try { cliente = await _service.AddClienteAsync(dto!); }
+        catch (DeSanti.Application.DocumentoDuplicadoException) { return DocumentoDuplicado(); }
 
-        return Ok(cliente);
+        return StatusCode(StatusCodes.Status201Created, cliente);
     }
 
     [HttpPut]
-    public async Task<IActionResult> UpdateAsync([FromBody] UpdateClienteDto dto)
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> UpdateAsync([FromBody] UpdateClienteDto? dto)
     {
-        if (dto == null) return BadRequest(new { message = "Preencha as informações do cliente." });
+        var erros = CriarClienteValidator.ValidarAtualizacao(dto);
+        if (erros.Count > 0)
+        {
+            return BadRequest(new ValidationProblemDetails(erros)
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "Confira os dados do cliente."
+            });
+        }
 
-        var success = await _service.UpdateClienteAsync(dto);
+        bool success;
+        try { success = await _service.UpdateClienteAsync(dto!); }
+        catch (DeSanti.Application.DocumentoDuplicadoException) { return DocumentoDuplicado(); }
 
         if (!success) return NotFound(new { message = "Cliente não encontrado." });
         return NoContent();
     }
+
+    private IActionResult DocumentoDuplicado() => Conflict(new ValidationProblemDetails(
+        new Dictionary<string, string[]> { ["documento"] = ["Já existe um cliente com este CPF/CNPJ. Consulte o cadastro existente."] })
+        { Status = 409, Title = "CPF/CNPJ já cadastrado." });
 
     [HttpDelete]
     public async Task<IActionResult> DeleteAsync([FromBody] DesativarClienteDto dto)

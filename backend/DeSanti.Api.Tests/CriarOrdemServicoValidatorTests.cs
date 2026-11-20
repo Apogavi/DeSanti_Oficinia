@@ -1,4 +1,4 @@
-﻿using DeSanti.Application.DTOs.OrdensServico;
+using DeSanti.Application.DTOs.OrdensServico;
 using DeSanti.Application.Validators.OrdensServico;
 
 namespace DeSanti.Api.Tests;
@@ -6,31 +6,17 @@ namespace DeSanti.Api.Tests;
 public class CriarOrdemServicoValidatorTests
 {
     [Fact]
+    public void RejeitaClienteIdInvalido()
+    {
+        var pedido = PedidoValido() with { ClienteId = 0};
+
+        Assert.Contains("clienteId", CriarOrdemServicoValidator.Validar(pedido).Keys);
+    }
+
+    [Fact]
     public void AceitaPedidoValido()
     {
         Assert.Empty(CriarOrdemServicoValidator.Validar(PedidoValido()));
-    }
-
-    [Fact]
-    public void RejeitaNomeVazio()
-    {
-        var pedido = PedidoValido() with { NomeCliente = " " };
-
-        Assert.Contains(
-            "nomeCliente",
-            CriarOrdemServicoValidator.Validar(pedido).Keys
-        );
-    }
-
-    [Fact]
-    public void RejeitaCpfInvalido()
-    {
-        var pedido = PedidoValido() with { Cpf = new string('0', 11) };
-
-        Assert.Contains(
-            "cpf",
-            CriarOrdemServicoValidator.Validar(pedido).Keys
-        );
     }
 
     [Fact]
@@ -44,10 +30,56 @@ public class CriarOrdemServicoValidatorTests
         );
     }
 
+    [Theory]
+    [InlineData(0L)]
+    [InlineData(70L)]
+    public void AceitaPecaComCustoConhecido(long custo)
+    {
+        var pedido = PedidoValido() with { Pecas = [new PecaRequest("Peça teste", 3, 101, custo)] };
+
+        Assert.Empty(CriarOrdemServicoValidator.Validar(pedido));
+    }
+
+    [Fact]
+    public void RejeitaPecaSemCusto()
+    {
+        var pedido = PedidoValido() with { Pecas = [new PecaRequest("Peça teste", 3, 101, null)] };
+
+        var erros = CriarOrdemServicoValidator.Validar(pedido);
+
+        Assert.Equal(["Informe o custo da peça."], erros["pecas[0].custoUnitarioCentavos"]);
+    }
+
+    [Fact]
+    public void RejeitaPecaComCustoNegativo()
+    {
+        var pedido = PedidoValido() with { Pecas = [new PecaRequest("Peça teste", 3, 101, -1)] };
+
+        var erros = CriarOrdemServicoValidator.Validar(pedido);
+
+        Assert.Equal(["O custo da peça não pode ser negativo."], erros["pecas[0].custoUnitarioCentavos"]);
+    }
+
+    [Fact]
+    public void IdentificaApenasAPecaSemCusto()
+    {
+        var pedido = PedidoValido() with
+        {
+            Pecas =
+            [
+                new PecaRequest("Peça com custo", 1, 101, 50),
+                new PecaRequest("Peça sem custo", 1, 101, null)
+            ]
+        };
+
+        var erros = CriarOrdemServicoValidator.Validar(pedido);
+
+        Assert.DoesNotContain("pecas[0].custoUnitarioCentavos", erros.Keys);
+        Assert.Contains("pecas[1].custoUnitarioCentavos", erros.Keys);
+    }
+
     private static CriarOrdemServicoRequest PedidoValido() => new(
-        "Cliente Teste",
-        CpfSintetico(),
-        new string('0', 11),
+        1L,
         "AAA0A00",
         "Marca Teste",
         "Modelo Teste",
@@ -60,21 +92,4 @@ public class CriarOrdemServicoValidatorTests
         null
     );
 
-    private static string CpfSintetico()
-    {
-        var cpf = "000000001";
-
-        for (var posicao = 9; posicao <= 10; posicao++)
-        {
-            var soma = 0;
-
-            for (var i = 0; i < posicao; i++)
-                soma += (cpf[i] - '0') * (posicao + 1 - i);
-
-            var digito = (soma * 10) % 11;
-            cpf += digito == 10 ? '0' : (char)('0' + digito);
-        }
-
-        return cpf;
-    }
 }

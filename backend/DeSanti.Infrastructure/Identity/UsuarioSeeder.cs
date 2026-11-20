@@ -1,0 +1,95 @@
+using DeSanti.Application;
+using DeSanti.Application.Interfaces.Repositories;
+using DeSanti.Application.Security;
+using DeSanti.Domain;
+using DeSanti.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace DeSanti.Infrastructure.Identity;
+
+public static class UsuarioSeeder
+{
+    public static async Task SeedInitialAdminsAsync(
+        IServiceProvider services,
+        IConfiguration configuration,
+        ILogger logger)
+    {
+        if (!string.Equals(configuration["SeedAdmin:Enabled"], "true", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        try
+        {
+            using var scope = services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var repo = scope.ServiceProvider.GetRequiredService<IUsuarioRepository>();
+
+            if (string.Equals(configuration["SeedAdmin:AutoCreateTable"], "true", StringComparison.OrdinalIgnoreCase))
+            {
+                await db.Database.ExecuteSqlRawAsync("""
+                    CREATE TABLE IF NOT EXISTS `Usuarios` (
+                        `Id` bigint NOT NULL AUTO_INCREMENT,
+                        `NomeUsuario` varchar(64) NOT NULL,
+                        `Nome` varchar(120) NOT NULL,
+                        `Email` varchar(200) NULL,
+                        `PasswordHash` varchar(256) NOT NULL,
+                        `Role` varchar(32) NOT NULL,
+                        `Ativo` tinyint(1) NOT NULL DEFAULT TRUE,
+                        `DataCriacaoUtc` datetime(6) NOT NULL,
+                        `DataAlteracaoUtc` datetime(6) NULL,
+                        PRIMARY KEY (`Id`),
+                        UNIQUE INDEX `idx_usuarios_nome_usuario` (`NomeUsuario`)
+                    ) ENGINE=InnoDB;
+                    """);
+            }
+
+            await SeedAccountIfMissingAsync(
+                repo,
+                configuration["SeedAdmin:DesantiUser"] ?? "desanti",
+                configuration["SeedAdmin:DesantiName"] ?? "DeSanti Automotiva",
+                configuration["SeedAdmin:DesantiPassword"],
+                logger);
+
+            await SeedAccountIfMissingAsync(
+                repo,
+                configuration["SeedAdmin:DiosecUser"] ?? "diosec",
+                configuration["SeedAdmin:DiosecName"] ?? "Diogo",
+                configuration["SeedAdmin:DiosecPassword"],
+                logger);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Não foi possível executar o seed inicial de usuários (verifique se o MySQL está ativo).");
+        }
+    }
+
+    private static async Task SeedAccountIfMissingAsync(
+        IUsuarioRepository repo,
+        string userName,
+        string name,
+        string? password,
+        ILogger logger)
+    {
+        var normalized = AuthService.NormalizarUserName(userName);
+        if (string.IsNullOrWhiteSpace(normalized) || string.IsNullOrWhiteSpace(password))
+            return;
+
+        if (await repo.ExisteComUserNameAsync(normalized))
+            return;
+
+        var admin = new Usuario
+        {
+            NomeUsuario = normalized,
+            Nome = name.Trim(),
+            PasswordHash = SenhaHasher.Hash(password),
+            Role = AppRoles.Admin,
+            Ativo = true,
+            DataCriacaoUtc = DateTime.UtcNow
+        };
+
+        await repo.AddAsync(admin);
+        logger.LogInformation("Usuário administrador inicial '{UserName}' criado com sucesso.", normalized);
+    }
+}
