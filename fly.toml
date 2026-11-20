@@ -1,0 +1,22 @@
+app = "desanti-oficinia"
+primary_region = "gru"
+
+[build]
+  dockerfile = "backend/Dockerfile"
+
+[env]
+  ASPNETCORE_URLS = "http://+:8080"
+  ASPNETCORE_ENVIRONMENT = "Production"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

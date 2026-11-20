@@ -13,6 +13,7 @@ public static class DependencyInjection
     {
         services.AddScoped<ConsultaOrdemService>();
         services.AddScoped<RelatorioFinanceiroService>();
+        services.AddScoped<KeepAwakeService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IUserManagementService, UserManagementService>();
         services.AddScoped<IClienteService, ClienteService>();

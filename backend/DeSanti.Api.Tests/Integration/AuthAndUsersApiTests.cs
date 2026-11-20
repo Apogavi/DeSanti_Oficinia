@@ -102,6 +102,33 @@ public class AuthAndUsersApiTests
         Assert.Equal(HttpStatusCode.Created, criarDiosec.StatusCode);
     }
 
+    [Fact]
+    public async Task KeepAwakePingFuncionaSemAutenticacaoQuandoSemApiKey()
+    {
+        var fakeKeepAwake = new KeepAwakeRepositoryFake();
+        using var factory = new ApiFactory();
+        using var client = factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
+        {
+            services.RemoveAll<IKeepAwakeRepository>();
+            services.AddSingleton<IKeepAwakeRepository>(fakeKeepAwake);
+        })).CreateClient();
+        client.DefaultRequestHeaders.Authorization = null;
+
+        var resp = await client.GetAsync("/api/v1/keep-awake");
+        Assert.Equal(HttpStatusCode.OK, resp.StatusCode);
+        Assert.Equal(1, fakeKeepAwake.Pings);
+    }
+
+    private sealed class KeepAwakeRepositoryFake : IKeepAwakeRepository
+    {
+        public int Pings { get; private set; }
+        public Task<KeepAwakeRecord> PingAsync(CancellationToken ct = default)
+        {
+            Pings++;
+            return Task.FromResult(new KeepAwakeRecord { Id = Pings, Status = 1, UpdatedAtUtc = DateTime.UtcNow });
+        }
+    }
+
     private static HttpClient CriarClient(ApiFactory factory, UsuarioRepositoryFake fake) =>
         factory.WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
         {

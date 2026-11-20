@@ -8,6 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
     <PackageReference Include="MySql.EntityFrameworkCore" Version="10.0.12" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <ProjectReference Include="../DeSanti.Application/DeSanti.Application.csproj" />
     <ProjectReference Include="../DeSanti.Domain/DeSanti.Domain.csproj" />
     <PackageReference Include="MySqlConnector" Version="2.6.2" />

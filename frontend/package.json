@@ -4,7 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node scripts/generate-config.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "node --import ./test-loader.mjs --test src/app/core/*.spec.ts"
   },

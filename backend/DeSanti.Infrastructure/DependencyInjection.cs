@@ -14,10 +14,31 @@ public static class DependencyInjection
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var provider = configuration["Database:Provider"];
 
         services.AddDbContext<AppDbContext>(options =>
         {
-            if (!string.IsNullOrEmpty(connectionString))
+            if (string.IsNullOrEmpty(connectionString))
+                return;
+
+            var usarPostgres =
+                string.Equals(provider, "Postgres", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(provider, "PostgreSQL", StringComparison.OrdinalIgnoreCase) ||
+                connectionString.Contains("Host=", StringComparison.OrdinalIgnoreCase) ||
+                connectionString.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) ||
+                connectionString.StartsWith("postgresql://", StringComparison.OrdinalIgnoreCase);
+
+            if (usarPostgres)
+            {
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    npgsqlOptions.EnableRetryOnFailure(
+                        maxRetryCount: 3,
+                        maxRetryDelay: TimeSpan.FromMilliseconds(5),
+                        errorCodesToAdd: null);
+                });
+            }
+            else
             {
                 // O provider oficial suporta EF Core 10 e não consulta o banco no startup.
                 options.UseMySQL(connectionString);
@@ -35,6 +56,7 @@ public static class DependencyInjection
         });
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+        services.AddScoped<IKeepAwakeRepository, KeepAwakeRepository>();
         services.AddScoped<IConsultaOrdemRepository, ConsultaOrdemRepository>();
         services.AddScoped<IClienteRepository, ClienteRepository>();
         services.AddScoped<IOrdemServicoRepository, OrdemServicoRepository>();

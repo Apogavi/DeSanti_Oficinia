@@ -92,3 +92,11 @@ CREATE TABLE `Usuarios` (
 ) ENGINE=InnoDB;
 
 
+CREATE TABLE `KeepAwakeRecords` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Status` smallint NOT NULL DEFAULT 1,
+    `UpdatedAtUtc` datetime(6) NOT NULL,
+    PRIMARY KEY (`Id`)
+) ENGINE=InnoDB;
+
+

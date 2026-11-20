@@ -14,11 +14,15 @@ public class ClienteRepository : IClienteRepository
         _context = context;
     }
     
+    private static bool EhViolacaoDocumentoUnico(DbUpdateException e) =>
+        e.InnerException is MySql.Data.MySqlClient.MySqlException { Number: 1062 } ||
+        e.InnerException is Npgsql.PostgresException { SqlState: "23505" };
+
     public async Task AddAsync(Cliente cliente)
     {
         _context.Clientes.Add(cliente);
         try { await _context.SaveChangesAsync(); }
-        catch (DbUpdateException e) when (e.InnerException is MySql.Data.MySqlClient.MySqlException { Number: 1062 })
+        catch (DbUpdateException e) when (EhViolacaoDocumentoUnico(e))
         { throw new DeSanti.Application.DocumentoDuplicadoException(); }
     }
 
@@ -26,7 +30,7 @@ public class ClienteRepository : IClienteRepository
     {
         _context.Clientes.Update(cliente);
         try { await _context.SaveChangesAsync(); }
-        catch (DbUpdateException e) when (e.InnerException is MySql.Data.MySqlClient.MySqlException { Number: 1062 })
+        catch (DbUpdateException e) when (EhViolacaoDocumentoUnico(e))
         { throw new DeSanti.Application.DocumentoDuplicadoException(); }
     }
 
@@ -34,7 +38,7 @@ public class ClienteRepository : IClienteRepository
     {
         _context.Clientes.Remove(cliente);
         try { await _context.SaveChangesAsync(); }
-        catch (DbUpdateException e) when (e.InnerException is MySql.Data.MySqlClient.MySqlException { Number: 1062 })
+        catch (DbUpdateException e) when (EhViolacaoDocumentoUnico(e))
         { throw new DeSanti.Application.DocumentoDuplicadoException(); }
     }
 

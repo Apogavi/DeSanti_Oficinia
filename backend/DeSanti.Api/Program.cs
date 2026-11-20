@@ -3,6 +3,7 @@ using DeSanti.Application;
 using DeSanti.Infrastructure;
 using DeSanti.Infrastructure.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,6 +11,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>();
 if (allowedOrigins is null || allowedOrigins.Length == 0)
@@ -20,7 +28,11 @@ if (allowedOrigins is null || allowedOrigins.Length == 0)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendDev", policy =>
-        policy.WithOrigins(allowedOrigins)
+        policy.SetIsOriginAllowed(origin =>
+                allowedOrigins.Contains(origin, StringComparer.OrdinalIgnoreCase) ||
+                (Uri.TryCreate(origin, UriKind.Absolute, out var uri) &&
+                 uri.Scheme == Uri.UriSchemeHttps &&
+                 uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)))
               .AllowAnyHeader()
               .AllowAnyMethod()
               .WithExposedHeaders("X-Has-Next-Page"));
@@ -73,6 +85,8 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
+
 // Falhas inesperadas retornam ProblemDetails sem expor dados ou detalhes do banco.
 app.UseExceptionHandler();
 
@@ -80,7 +94,10 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
 app.UseCors("FrontendDev");
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+{
+    app.UseHttpsRedirection();
+}
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

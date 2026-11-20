@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<OrdemServico> OrdemServico => Set<OrdemServico>();
     public DbSet<PecaOrdemServico> PecasOrdemServico => Set<PecaOrdemServico>();
     public DbSet<Usuario> Usuarios => Set<Usuario>();
+    public DbSet<KeepAwakeRecord> KeepAwakeRecords => Set<KeepAwakeRecord>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
